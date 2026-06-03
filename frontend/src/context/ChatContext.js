@@ -2,10 +2,13 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { io as socketIO } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { logApiIssue } from '../utils/api';
 
 const ChatContext = createContext();
+
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
 
 export function ChatProvider({ children }) {
   const { user, token, API_URL } = useAuth();
@@ -16,7 +19,8 @@ export function ChatProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [widgetOpen, setWidgetOpen] = useState(false);
-  const pollRef = useRef(null);
+  const socketRef = useRef(null);
+  const activeConvRef = useRef(null); // keep latest value accessible inside socket handlers
 
   const openChatWidget = useCallback(() => setWidgetOpen(true), []);
   const closeChatWidget = useCallback(() => setWidgetOpen(false), []);
@@ -29,6 +33,119 @@ export function ChatProvider({ children }) {
     [token]
   );
 
+  // Keep ref in sync
+  useEffect(() => {
+    activeConvRef.current = activeConversation;
+  }, [activeConversation]);
+
+  // ── Socket lifecycle ────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!token || !user) {
+      // Disconnect on logout
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      setConversations([]);
+      setActiveConversation(null);
+      setMessages([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    // Connect
+    const socket = socketIO(SOCKET_URL, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1500,
+    });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      // Join admin room so inbox updates in real-time
+      if (isAdmin) socket.emit('join_admin');
+
+      // Rejoin active conversation room if there is one (e.g. after reconnect)
+      const conv = activeConvRef.current;
+      if (conv?.id) {
+        socket.emit('join', { userId: user.id, conversationId: conv.id });
+      } else {
+        socket.emit('join', { userId: user.id });
+      }
+    });
+
+    // New message arrives — append if it belongs to the active conversation
+    socket.on('new_message', (message) => {
+      const conv = activeConvRef.current;
+      if (conv?.id === message.conversationId) {
+        setMessages((prev) => {
+          // Deduplicate by id
+          if (prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message];
+        });
+        // If the message is from the other side, keep unread count at 0
+        // (the widget/page is open so user sees it instantly)
+      } else {
+        // Not in this conversation — bump unread badge
+        setUnreadCount((prev) => prev + 1);
+      }
+
+      // Update the conversation list so the last message preview refreshes
+      if (isAdmin) {
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === message.conversationId
+              ? { ...c, lastMessage: message, updatedAt: message.createdAt }
+              : c
+          )
+        );
+      }
+    });
+
+    // Admin inbox: a conversation was updated (new customer message)
+    socket.on('conversation_updated', ({ conversationId, lastMessage }) => {
+      if (!isAdmin) return;
+      setConversations((prev) => {
+        const exists = prev.some((c) => c.id === conversationId);
+        if (!exists) {
+          // New conversation — fetch full list to get customer details
+          fetchConversationsRef.current?.();
+          return prev;
+        }
+        // Move updated conversation to top & update last message
+        const updated = prev.map((c) =>
+          c.id === conversationId
+            ? { ...c, lastMessage, updatedAt: lastMessage.createdAt }
+            : c
+        );
+        // Re-sort by updatedAt desc
+        return [...updated].sort(
+          (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+        );
+      });
+
+      // Bump admin unread count if this isn't the active conversation
+      if (activeConvRef.current?.id !== conversationId) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user?.id, isAdmin]);
+
+  // When the active conversation changes, join that socket room
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || !activeConversation?.id) return;
+    socket.emit('join_conversation', { conversationId: activeConversation.id });
+  }, [activeConversation?.id]);
+
+  // ── API helpers ─────────────────────────────────────────────────────────────
   const fetchUnreadCount = useCallback(async () => {
     if (!token || !user) return;
     try {
@@ -73,6 +190,12 @@ export function ChatProvider({ children }) {
     }
   }, [API_URL, token, isAdmin, authHeaders]);
 
+  // Keep a stable ref so the socket handler can call it without stale closure
+  const fetchConversationsRef = useRef(fetchConversations);
+  useEffect(() => {
+    fetchConversationsRef.current = fetchConversations;
+  }, [fetchConversations]);
+
   const openConversation = useCallback(
     async (conversationId) => {
       if (!token || !conversationId) return;
@@ -84,12 +207,14 @@ export function ChatProvider({ children }) {
         );
         setActiveConversation(res.data.conversation);
         setMessages(res.data.messages || []);
-        setUnreadCount((prev) => Math.max(0, prev - (res.data.unreadCount || 0)));
+
+        // Mark as read on server
         await axios.patch(
           `${API_URL}/chat/conversations/${conversationId}/read`,
           null,
           authHeaders()
         );
+        // Recalculate unread from fresh list
         if (isAdmin) await fetchConversations();
         else setUnreadCount(0);
       } catch (err) {
@@ -101,6 +226,58 @@ export function ChatProvider({ children }) {
     [API_URL, token, authHeaders, isAdmin, fetchConversations]
   );
 
+  const sendMessage = useCallback(
+    async (body, conversationId) => {
+      if (!token || !body?.trim()) return false;
+      setSending(true);
+      try {
+        const url = isAdmin
+          ? `${API_URL}/chat/conversations/${conversationId}/messages`
+          : `${API_URL}/chat/messages`;
+        const res = await axios.post(url, { body: body.trim() }, authHeaders());
+        const newMsg = res.data.message;
+
+        // Optimistically append sender's own message immediately
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
+        });
+
+        if (isCustomer && res.data.conversationId) {
+          setActiveConversation((prev) =>
+            prev?.id === res.data.conversationId
+              ? prev
+              : { ...(prev || {}), id: res.data.conversationId, customerId: user?.id }
+          );
+        }
+        return true;
+      } catch (err) {
+        logApiIssue('send message', err);
+        return false;
+      } finally {
+        setSending(false);
+      }
+    },
+    [API_URL, token, isAdmin, isCustomer, authHeaders, user?.id]
+  );
+
+  const markActiveRead = useCallback(async () => {
+    const id = activeConversation?.id;
+    if (!token || !id) return;
+    try {
+      await axios.patch(`${API_URL}/chat/conversations/${id}/read`, null, authHeaders());
+      setUnreadCount(0);
+      if (isAdmin) await fetchConversations();
+    } catch (err) {
+      logApiIssue('chat mark read', err);
+    }
+  }, [API_URL, token, activeConversation?.id, authHeaders, isAdmin, fetchConversations]);
+
+  // Kept for backwards-compat (pages call startPolling/stopPolling) — now no-ops
+  const startPolling = useCallback(() => {}, []);
+  const stopPolling = useCallback(() => {}, []);
+
+  // Refresh messages manually (fallback / first load)
   const refreshActiveMessages = useCallback(async () => {
     if (!token) return;
     if (isCustomer) {
@@ -122,97 +299,11 @@ export function ChatProvider({ children }) {
     }
   }, [API_URL, token, isCustomer, activeConversation?.id, authHeaders]);
 
-  const sendMessage = useCallback(
-    async (body, conversationId) => {
-      if (!token || !body?.trim()) return false;
-      setSending(true);
-      try {
-        const url = isAdmin
-          ? `${API_URL}/chat/conversations/${conversationId}/messages`
-          : `${API_URL}/chat/messages`;
-        const res = await axios.post(url, { body: body.trim() }, authHeaders());
-        const newMsg = res.data.message;
-        setMessages((prev) => [...prev, newMsg]);
-        if (isCustomer && res.data.conversationId) {
-          setActiveConversation((prev) =>
-            prev?.id === res.data.conversationId
-              ? prev
-              : { ...(prev || {}), id: res.data.conversationId, customerId: user?.id }
-          );
-        }
-        if (isAdmin) await fetchConversations();
-        return true;
-      } catch (err) {
-        logApiIssue('send message', err);
-        return false;
-      } finally {
-        setSending(false);
-      }
-    },
-    [
-      API_URL,
-      token,
-      isAdmin,
-      isCustomer,
-      activeConversation,
-      authHeaders,
-      fetchConversations,
-      user?.id,
-    ]
-  );
-
-  const markActiveRead = useCallback(async () => {
-    const id = activeConversation?.id;
-    if (!token || !id) return;
-    try {
-      await axios.patch(`${API_URL}/chat/conversations/${id}/read`, null, authHeaders());
-      setUnreadCount(0);
-      if (isAdmin) await fetchConversations();
-    } catch (err) {
-      logApiIssue('chat mark read', err);
-    }
-  }, [API_URL, token, activeConversation?.id, authHeaders, isAdmin, fetchConversations]);
-
+  // Initial unread count fetch for customers
   useEffect(() => {
-    if (!token || !user) {
-      setConversations([]);
-      setActiveConversation(null);
-      setMessages([]);
-      setUnreadCount(0);
-      return undefined;
-    }
-
-    if (isCustomer) {
-      fetchUnreadCount();
-    }
-
-    const interval = setInterval(() => {
-      if (isCustomer) fetchUnreadCount();
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [token, user, isAdmin, isCustomer, fetchConversations, fetchUnreadCount]);
-
-  const startPolling = useCallback(
-    (ms = 4000) => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      pollRef.current = setInterval(() => {
-        refreshActiveMessages();
-        if (isAdmin) fetchUnreadCount();
-        else fetchUnreadCount();
-      }, ms);
-    },
-    [refreshActiveMessages, fetchUnreadCount, isAdmin]
-  );
-
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => () => stopPolling(), [stopPolling]);
+    if (!token || !user || !isCustomer) return;
+    fetchUnreadCount();
+  }, [token, user, isCustomer, fetchUnreadCount]);
 
   return (
     <ChatContext.Provider

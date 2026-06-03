@@ -1,5 +1,6 @@
 const prisma = require('../db');
 const { hasChatModels } = require('../utils/chatModels');
+const { getIo } = require('../socket');
 
 const CHAT_SETUP_HINT =
   'Chat database not ready. Stop the server, run: npx prisma db push && npx prisma generate, then npm run dev';
@@ -247,8 +248,20 @@ const sendMessage = async (req, res) => {
       data: { updatedAt: new Date() },
     });
 
+    // Emit real-time event to everyone in the conversation room
+    const formatted = formatMessage(message);
+    const io = getIo();
+    if (io) {
+      io.to(`conv:${conversationId}`).emit('new_message', formatted);
+      // Notify admin inbox so unread badge updates without a full page refresh
+      io.to('admin_room').emit('conversation_updated', {
+        conversationId,
+        lastMessage: formatted,
+      });
+    }
+
     res.status(201).json({
-      message: formatMessage(message),
+      message: formatted,
       conversationId,
     });
   } catch (error) {

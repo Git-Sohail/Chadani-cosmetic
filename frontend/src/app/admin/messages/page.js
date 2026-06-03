@@ -25,22 +25,15 @@ export default function AdminMessagesPage() {
     fetchConversations,
     openConversation,
     sendMessage,
-    startPolling,
-    stopPolling,
   } = useChat();
 
   const [draft, setDraft] = useState('');
   const bottomRef = useRef(null);
 
+  // Load inbox on mount — socket keeps it updated after that
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
-
-  useEffect(() => {
-    if (!activeConversation?.id) return undefined;
-    startPolling(4000);
-    return () => stopPolling();
-  }, [activeConversation?.id, startPolling, stopPolling]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

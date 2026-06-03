@@ -21,8 +21,6 @@ export default function ChatWidget() {
     fetchMyConversation,
     sendMessage,
     markActiveRead,
-    startPolling,
-    stopPolling,
     activeConversation,
     widgetOpen,
     toggleChatWidget,
@@ -32,13 +30,12 @@ export default function ChatWidget() {
   const [draft, setDraft] = React.useState('');
   const bottomRef = useRef(null);
 
+  // Load conversation history when widget opens; socket handles new messages
   useEffect(() => {
-    if (!widgetOpen || !isCustomer || !user) return undefined;
+    if (!widgetOpen || !isCustomer || !user) return;
     fetchMyConversation();
     markActiveRead();
-    startPolling(4000);
-    return () => stopPolling();
-  }, [widgetOpen, isCustomer, user, fetchMyConversation, markActiveRead, startPolling, stopPolling]);
+  }, [widgetOpen, isCustomer, user, fetchMyConversation, markActiveRead]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
