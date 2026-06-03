@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import ProductCard from '../../../../components/ProductCard';
 import Button from '../../../../components/Button';
+import ReviewSection from '../../../../components/ReviewSection';
 import { Heart, ShoppingCart, Star, Sparkles, ShieldCheck, Truck, RefreshCw, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../../../../context/AuthContext';
@@ -327,6 +328,9 @@ export default function ProductDetails() {
 
           </div>
         </div>
+
+        {/* Reviews */}
+        <ReviewSection productId={productId} />
 
         {/* Related Products Grid */}
         {relatedProducts.length > 0 && (

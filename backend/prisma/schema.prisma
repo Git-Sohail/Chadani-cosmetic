@@ -26,6 +26,7 @@ model User {
   notifications   Notification[]
   conversations   Conversation[] @relation("CustomerConversations")
   chatMessages      ChatMessage[]
+  reviews       Review[]
 }
 
 model Notification {
@@ -87,6 +88,7 @@ model Product {
   cartItems     CartItem[]
   wishlists     Wishlist[]
   orderItems    OrderItem[]
+  reviews       Review[]
 }
 
 model ProductImage {
@@ -182,4 +184,20 @@ model OrderItem {
 
   order              Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product            Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  rating    Int      // 1–5
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId])
 }
