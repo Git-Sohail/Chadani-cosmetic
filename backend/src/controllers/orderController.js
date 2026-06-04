@@ -9,7 +9,12 @@ const {
 const placeOrder = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { customerName, phone, address, paymentMethod } = req.body;
+    const {
+      customerName, phone, address,
+      city, area, postalCode,
+      deliveryLat, deliveryLng, deliveryMapUrl,
+      paymentMethod,
+    } = req.body;
 
     if (!customerName || !phone || !address) {
       return res.status(400).json({ error: 'Customer name, phone, and delivery address are required.' });
@@ -54,10 +59,16 @@ const placeOrder = async (req, res) => {
           customerEmail: req.user.email,
           phone,
           address,
+          city: city || null,
+          area: area || null,
+          postalCode: postalCode || null,
+          deliveryLat: deliveryLat ? parseFloat(deliveryLat) : null,
+          deliveryLng: deliveryLng ? parseFloat(deliveryLng) : null,
+          deliveryMapUrl: deliveryMapUrl || null,
           totalAmount,
           paymentMethod: paymentMethod || 'Cash on Delivery',
-          orderStatus: 'pending'
-        }
+          orderStatus: 'pending',
+        },
       });
 
       // 3. Create order items and decrement product stocks

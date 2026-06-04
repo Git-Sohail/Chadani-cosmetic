@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Users, Mail, Phone, MapPin, Calendar, CreditCard, Package, IndianRupee } from 'lucide-react';
+import { Users, Mail, Phone, MapPin, Calendar, CreditCard, Package, IndianRupee, ExternalLink } from 'lucide-react';
 import { formatPrice } from '../../utils/currency';
 
 const statusStyles = {
@@ -14,6 +14,8 @@ const statusStyles = {
 
 export default function OrderSummaryPanel({ order, statusControl = null }) {
   const statusClass = statusStyles[order.orderStatus] || statusStyles.pending;
+  const hasGps = order.deliveryLat && order.deliveryLng;
+  const mapUrl = order.deliveryMapUrl || (hasGps ? `https://www.google.com/maps?q=${order.deliveryLat},${order.deliveryLng}` : null);
 
   return (
     <div className="bg-white border border-pink-100/70 rounded-[2rem] p-6 sm:p-8 shadow-sm space-y-6">
@@ -28,10 +30,10 @@ export default function OrderSummaryPanel({ order, statusControl = null }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Customer info */}
         <div className="space-y-3">
           <h3 className="text-xs font-black uppercase tracking-widest text-rose-900 flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            Customer
+            <Users className="w-4 h-4" /> Customer
           </h3>
           <dl className="space-y-2 text-sm font-bold text-rose-950/80">
             <div className="flex gap-2">
@@ -46,17 +48,13 @@ export default function OrderSummaryPanel({ order, statusControl = null }) {
               <dt className="text-rose-900/40 w-20 shrink-0 flex items-center gap-1"><Phone className="w-3 h-3" /> Phone</dt>
               <dd>{order.phone}</dd>
             </div>
-            <div className="flex gap-2">
-              <dt className="text-rose-900/40 w-20 shrink-0 flex items-start gap-1 pt-0.5"><MapPin className="w-3 h-3" /> Address</dt>
-              <dd className="leading-relaxed font-medium">{order.address || order.deliveryAddress}</dd>
-            </div>
           </dl>
         </div>
 
+        {/* Order details */}
         <div className="space-y-3">
           <h3 className="text-xs font-black uppercase tracking-widest text-rose-900 flex items-center gap-2">
-            <Package className="w-4 h-4" />
-            Order details
+            <Package className="w-4 h-4" /> Order details
           </h3>
           <dl className="space-y-2 text-sm font-bold text-rose-950/80">
             <div className="flex gap-2 items-center">
@@ -74,6 +72,56 @@ export default function OrderSummaryPanel({ order, statusControl = null }) {
           </dl>
           {statusControl}
         </div>
+      </div>
+
+      {/* Delivery address section */}
+      <div className="border-t border-pink-50 pt-5 space-y-3">
+        <h3 className="text-xs font-black uppercase tracking-widest text-rose-900 flex items-center gap-2">
+          <MapPin className="w-4 h-4" /> Delivery Address
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div className="bg-pink-50/40 rounded-2xl p-4 space-y-2">
+            <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">Street Address</p>
+            <p className="font-medium text-rose-950 leading-relaxed">{order.address || order.deliveryAddress}</p>
+          </div>
+          <div className="bg-pink-50/40 rounded-2xl p-4 space-y-2">
+            <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">City & Area</p>
+            <p className="font-bold text-rose-950">{order.city || '—'}</p>
+            {order.area && <p className="text-rose-900/60 font-medium text-xs">{order.area}</p>}
+            {order.postalCode && (
+              <p className="text-[10px] text-rose-900/50 font-semibold">
+                Postal / Landmark: {order.postalCode}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* GPS section */}
+        {hasGps ? (
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 space-y-3">
+            <p className="text-xs font-black text-emerald-700 uppercase tracking-widest">GPS Location Available</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <a href={mapUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-wider hover:bg-emerald-700 transition-colors">
+                <ExternalLink className="w-3.5 h-3.5" /> Open in Google Maps
+              </a>
+              <span className="text-[10px] text-rose-900/40 font-mono">
+                {Number(order.deliveryLat).toFixed(5)}, {Number(order.deliveryLng).toFixed(5)}
+              </span>
+            </div>
+            {/* Embedded map preview */}
+            <iframe
+              title="Delivery Location"
+              width="100%"
+              height="160"
+              loading="lazy"
+              className="rounded-xl border border-emerald-100"
+              src={`https://maps.google.com/maps?q=${order.deliveryLat},${order.deliveryLng}&z=15&output=embed`}
+            />
+          </div>
+        ) : (
+          <p className="text-xs text-rose-900/40 font-semibold italic">No GPS location provided — manual address only.</p>
+        )}
       </div>
     </div>
   );

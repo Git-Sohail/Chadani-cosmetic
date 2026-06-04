@@ -132,9 +132,15 @@ model Order {
   customerEmail String?
   phone         String
   address       String
+  city          String?
+  area          String?
+  postalCode    String?
+  deliveryLat   Float?
+  deliveryLng   Float?
+  deliveryMapUrl String?
   totalAmount   Float
   paymentMethod String      @default("Cash on Delivery")
-  orderStatus   String      @default("pending") // "pending" | "confirmed" | "shipped" | "delivered" | "cancelled"
+  orderStatus   String      @default("pending")
   createdAt     DateTime    @default(now())
 
   user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
