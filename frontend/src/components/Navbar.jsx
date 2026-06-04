@@ -66,7 +66,8 @@ export default function Navbar() {
               <img
                 src="/Logo.jpg"
                 alt="Chandani Cosmetic"
-                className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                className="h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                style={{ mixBlendMode: 'multiply' }}
               />
             </Link>
           </div>

@@ -51,7 +51,8 @@ export default function Footer() {
               <img
                 src="/Logo.jpg"
                 alt="Chandani Cosmetic"
-                className="h-12 w-auto object-contain brightness-110"
+                className="h-16 w-auto object-contain"
+                style={{ mixBlendMode: 'screen' }}
               />
             </Link>
             <p className="text-pink-200/70 leading-relaxed">
