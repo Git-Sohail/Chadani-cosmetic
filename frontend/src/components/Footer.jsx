@@ -47,13 +47,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 py-12 text-sm">
           {/* Logo & About */}
           <div className="space-y-4">
-            <Link href="/" className="flex items-center gap-1.5">
-              <span className="p-1 bg-rose-300 text-rose-950 rounded-full">
-                <Sparkles className="w-4 h-4" />
-              </span>
-              <span className="font-serif text-xl font-bold tracking-wide text-white">
-                Chadani<span className="text-rose-300 font-sans">Cosmetic</span>
-              </span>
+            <Link href="/" className="flex items-center">
+              <img
+                src="/Logo.jpg"
+                alt="Chandani Cosmetic"
+                className="h-12 w-auto object-contain brightness-110"
+              />
             </Link>
             <p className="text-pink-200/70 leading-relaxed">
               Bringing you premium quality skincare treatments, beauty cosmetics, and handcrafted bangles. Pamper yourself with the elegance you deserve.

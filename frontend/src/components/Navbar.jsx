@@ -62,13 +62,12 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="p-2 bg-rose-900 text-white rounded-2xl shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <span className="font-serif text-2xl font-black tracking-tight text-rose-950">
-                Chadani<span className="text-rose-600 font-sans italic">Cosmetic</span>
-              </span>
+            <Link href="/" className="flex items-center group">
+              <img
+                src="/Logo.jpg"
+                alt="Chandani Cosmetic"
+                className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              />
             </Link>
           </div>
 

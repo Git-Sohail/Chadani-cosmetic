@@ -19,6 +19,10 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata = {
   title: "Chadani Cosmetic | Premium Beauty & Jewelry Store",
   description: "Treat your skin with the best organic treatment, professional makeup, and exquisite traditional bangles.",
+  icons: {
+    icon: '/Logo.jpg',
+    apple: '/Logo.jpg',
+  },
 };
 
 export default function RootLayout({ children }) {
