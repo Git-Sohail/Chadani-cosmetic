@@ -5,6 +5,8 @@ const nextConfig = {
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
       { protocol: 'http', hostname: 'localhost', port: '5000', pathname: '/uploads/**' },
+      // Production backend on Render
+      { protocol: 'https', hostname: '*.onrender.com', pathname: '/uploads/**' },
     ],
   },
 };

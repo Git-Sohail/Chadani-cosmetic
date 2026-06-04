@@ -29,7 +29,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 // Socket.IO — real-time chat
 const io = new Server(httpServer, {
   cors: {
-    origin: FRONTEND_URL,
+    origin: [FRONTEND_URL, 'http://localhost:3000'],
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -63,7 +63,10 @@ io.on('connection', (socket) => {
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [FRONTEND_URL, 'http://localhost:3000'],
+  credentials: true,
+}));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
