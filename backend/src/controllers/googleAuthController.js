@@ -25,7 +25,9 @@ function getOAuth2Client() {
 }
 
 function getFrontendUrl() {
-  return process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:3000';
+  const url = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:3000';
+  // Strip trailing slash to avoid double-slash in redirect URLs
+  return url.replace(/\/$/, '');
 }
 
 function redirectWithError(res, code, message) {
@@ -155,7 +157,9 @@ const googleCallback = async (req, res) => {
       redirect: statePayload.redirect || '/',
     });
 
-    res.redirect(`${getFrontendUrl()}/auth/google/callback?${params}`);
+    const redirectUrl = `${getFrontendUrl()}/auth/google/callback?${params}`;
+    console.log('[Google OAuth] Redirecting to:', redirectUrl.split('?')[0]);
+    res.redirect(redirectUrl);
   } catch (err) {
     console.error('Google OAuth callback error:', err);
     if (err.code === 'ADMIN_RESERVED') {
