@@ -4,38 +4,21 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import {
-  ShoppingBag,
-  Layers,
-  FileSpreadsheet,
-  Users,
-  AlertTriangle,
-  TrendingUp,
-  Plus,
-  Edit,
-  Trash2,
-  Check,
-  X,
-  Sparkles,
-  RefreshCw,
-  FolderPlus,
-  Loader2,
-  ShieldCheck,
-  Eye,
-  Info,
-  IndianRupee,
-  Package,
-  Calendar,
-  Phone,
-  Mail,
-  MapPin,
-  Image as ImageIcon
+  ShoppingBag, Layers, FileSpreadsheet, Users, AlertTriangle, TrendingUp,
+  Plus, Edit, Trash2, X, Sparkles, RefreshCw, FolderPlus, Loader2,
+  ShieldCheck, IndianRupee, Package, Image as ImageIcon,
 } from 'lucide-react';
 import axios from 'axios';
 import AdminOrdersSection from './AdminOrdersSection';
 import OrderSummaryPanel from './OrderSummaryPanel';
 import OrderedProductsTable from './OrderedProductsTable';
 import ImagePreviewModal from './ImagePreviewModal';
+import SearchFilterBar from './SearchFilterBar';
+import Pagination from './Pagination';
+import { SkeletonStatCards, SkeletonTableRows } from './Skeleton';
 import { formatPrice } from '../../utils/currency';
+
+const PAGE_SIZE = 10;
 
 export default function AdminPanel({ activeTab = 'dashboard' }) {
   const { user, token, API_URL } = useAuth();
@@ -78,6 +61,21 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
   // Notifications/Toasts
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [uploading, setUploading] = useState(false);
+
+  // Search / filter / sort / pagination state
+  const [productSearch, setProductSearch] = useState('');
+  const [productCategory, setProductCategory] = useState('');
+  const [productSort, setProductSort] = useState('');
+  const [productPage, setProductPage] = useState(1);
+
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderStatus, setOrderStatus] = useState('');
+  const [orderSort, setOrderSort] = useState('');
+  const [orderPage, setOrderPage] = useState(1);
+
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerVerified, setCustomerVerified] = useState('');
+  const [customerPage, setCustomerPage] = useState(1);
 
   // Settings mock state
   const [settingsForm, setSettingsForm] = useState({
@@ -145,6 +143,69 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
   const lowStockProducts = useMemo(() => {
     return products.filter((p) => p.stock < 5);
   }, [products]);
+
+  // ── Filtered + paginated products ─────────────────────────────────────────
+  const filteredProducts = useMemo(() => {
+    let list = [...products];
+    if (productSearch) {
+      const q = productSearch.toLowerCase();
+      list = list.filter((p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.sku || '').toLowerCase().includes(q) ||
+        (p.category?.name || '').toLowerCase().includes(q)
+      );
+    }
+    if (productCategory) list = list.filter((p) => p.categoryId === productCategory);
+    if (productSort === 'priceAsc') list.sort((a, b) => a.price - b.price);
+    else if (productSort === 'priceDesc') list.sort((a, b) => b.price - a.price);
+    else if (productSort === 'stockAsc') list.sort((a, b) => a.stock - b.stock);
+    else if (productSort === 'nameAsc') list.sort((a, b) => a.name.localeCompare(b.name));
+    return list;
+  }, [products, productSearch, productCategory, productSort]);
+
+  const productTotalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const pagedProducts = filteredProducts.slice((productPage - 1) * PAGE_SIZE, productPage * PAGE_SIZE);
+
+  // ── Filtered + paginated orders ────────────────────────────────────────────
+  const filteredOrders = useMemo(() => {
+    let list = [...orders];
+    if (orderSearch) {
+      const q = orderSearch.toLowerCase();
+      list = list.filter((o) =>
+        o.customerName.toLowerCase().includes(q) ||
+        o.id.toLowerCase().includes(q) ||
+        (o.phone || '').includes(q)
+      );
+    }
+    if (orderStatus) list = list.filter((o) => o.orderStatus === orderStatus);
+    if (orderSort === 'totalDesc') list.sort((a, b) => b.totalAmount - a.totalAmount);
+    else if (orderSort === 'totalAsc') list.sort((a, b) => a.totalAmount - b.totalAmount);
+    else if (orderSort === 'newest') list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    else if (orderSort === 'oldest') list.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    return list;
+  }, [orders, orderSearch, orderStatus, orderSort]);
+
+  const orderTotalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
+  const pagedOrders = filteredOrders.slice((orderPage - 1) * PAGE_SIZE, orderPage * PAGE_SIZE);
+
+  // ── Filtered + paginated customers ────────────────────────────────────────
+  const filteredCustomers = useMemo(() => {
+    let list = [...customers];
+    if (customerSearch) {
+      const q = customerSearch.toLowerCase();
+      list = list.filter((c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.email.toLowerCase().includes(q) ||
+        (c.phone || '').includes(q)
+      );
+    }
+    if (customerVerified === 'verified') list = list.filter((c) => c.isVerified);
+    if (customerVerified === 'unverified') list = list.filter((c) => !c.isVerified);
+    return list;
+  }, [customers, customerSearch, customerVerified]);
+
+  const customerTotalPages = Math.max(1, Math.ceil(filteredCustomers.length / PAGE_SIZE));
+  const pagedCustomers = filteredCustomers.slice((customerPage - 1) * PAGE_SIZE, customerPage * PAGE_SIZE);
 
   const uploadAuthHeaders = () => ({
     headers: { Authorization: `Bearer ${token}` },
@@ -452,11 +513,14 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
       </div>
 
       {loading && products.length === 0 && activeTab !== 'settings' && (
-            <div className="flex flex-col justify-center items-center py-40 text-rose-900/40 gap-4 animate-pulse">
-              <Loader2 className="w-12 h-12 animate-spin text-rose-600" />
-              <span className="text-xs font-black uppercase tracking-[0.3em]">Updating Records...</span>
-            </div>
-          )}
+        <div className="space-y-8">
+          <SkeletonStatCards />
+          <div className="bg-white border border-pink-100 rounded-[2.5rem] p-8">
+            <div className="animate-pulse h-4 w-40 bg-pink-100 rounded mb-6" />
+            <table className="w-full"><tbody><SkeletonTableRows rows={6} cols={5} /></tbody></table>
+          </div>
+        </div>
+      )}
 
           {(!loading || products.length > 0) && (
             <div className="animate-fadeIn">
@@ -484,6 +548,9 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                   </div>
 
                   {/* Metrics Grid */}
+                  {loading && products.length === 0
+                    ? <SkeletonStatCards />
+                    : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
                       { name: 'Total Revenue', value: formatPrice(stats.totalSales), icon: TrendingUp, desc: 'Gross Earnings', color: 'bg-rose-50 text-rose-900 border-rose-100' },
@@ -506,6 +573,7 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                       );
                     })}
                   </div>
+                  )}
 
                   {/* Critical alerts */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -572,67 +640,92 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
               {/* ==================== PRODUCTS TAB ==================== */}
               {activeTab === 'products' && (
                 <div className="bg-white border border-pink-100/70 rounded-[2.5rem] p-8 shadow-sm space-y-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pb-5 border-b border-pink-50">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-5 border-b border-pink-50">
                     <div>
                       <h3 className="font-serif font-black text-2xl text-rose-950">Active Inventory</h3>
-                      <p className="text-[10px] text-rose-900/40 font-black uppercase tracking-wider mt-1">Manage Listings, stock, & promotional pricing</p>
+                      <p className="text-[10px] text-rose-900/40 font-black uppercase tracking-wider mt-1">
+                        {filteredProducts.length} of {products.length} products
+                      </p>
                     </div>
-                    <button onClick={() => handleOpenProductModal(null)} className="px-6 py-3.5 bg-rose-900 hover:bg-rose-950 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 cursor-pointer">
+                    <button onClick={() => handleOpenProductModal(null)} className="px-6 py-3.5 bg-rose-900 hover:bg-rose-950 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 cursor-pointer shrink-0">
                       <Plus className="w-4 h-4" />
-                      <span>Create Listing</span>
+                      <span>Add Product</span>
                     </button>
                   </div>
 
-                  <div className="overflow-x-auto custom-scrollbar">
-                    <table className="w-full text-left border-collapse">
+                  <SearchFilterBar
+                    search={productSearch}
+                    onSearch={(v) => { setProductSearch(v); setProductPage(1); }}
+                    placeholder="Search by name, SKU, category…"
+                    filters={[{
+                      label: 'All Categories',
+                      value: 'category',
+                      options: categories.map((c) => ({ label: c.name, value: c.id })),
+                    }]}
+                    filterValues={{ category: productCategory }}
+                    onFilter={(key, val) => { setProductCategory(val); setProductPage(1); }}
+                    sortOptions={[
+                      { label: 'Price: Low→High', value: 'priceAsc' },
+                      { label: 'Price: High→Low', value: 'priceDesc' },
+                      { label: 'Stock: Low first', value: 'stockAsc' },
+                      { label: 'Name A–Z', value: 'nameAsc' },
+                    ]}
+                    sortValue={productSort}
+                    onSort={(v) => { setProductSort(v); setProductPage(1); }}
+                  />
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse" role="grid" aria-label="Products table">
                       <thead>
                         <tr className="border-b border-pink-50 text-rose-950/40 font-black uppercase text-[10px] tracking-[0.2em]">
-                          <th className="py-4 px-4">Visual & Listing</th>
-                          <th className="py-4 px-4">SKU</th>
-                          <th className="py-4 px-4">Category</th>
-                          <th className="py-4 px-4">Original / Sale Price</th>
-                          <th className="py-4 px-4 text-center">Status</th>
-                          <th className="py-4 px-4 text-right">Operations</th>
+                          <th scope="col" className="py-4 px-4">Product</th>
+                          <th scope="col" className="py-4 px-4">SKU</th>
+                          <th scope="col" className="py-4 px-4">Category</th>
+                          <th scope="col" className="py-4 px-4">Price</th>
+                          <th scope="col" className="py-4 px-4 text-center">Stock</th>
+                          <th scope="col" className="py-4 px-4 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-pink-50/30">
-                        {products.map((p) => (
+                        {loading && pagedProducts.length === 0
+                          ? <SkeletonTableRows rows={5} cols={6} />
+                          : pagedProducts.length === 0
+                          ? <tr><td colSpan={6} className="py-16 text-center text-xs font-black text-rose-900/40 uppercase tracking-widest">No products found</td></tr>
+                          : pagedProducts.map((p) => (
                           <tr key={p.id} className="hover:bg-pink-50/20 transition-colors">
                             <td className="py-5 px-4">
-                              <div className="flex items-center gap-4.5">
-                                <div className="w-14 h-14 rounded-2xl overflow-hidden border border-pink-100 flex-shrink-0 cursor-zoom-in bg-pink-50" onClick={() => p.image && setPreviewImage(p.image)}>
-                                  {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-5 h-5 text-pink-200" /></div>}
+                              <div className="flex items-center gap-3">
+                                <div className="w-14 h-14 rounded-2xl overflow-hidden border border-pink-100 shrink-0 cursor-zoom-in bg-pink-50" onClick={() => p.image && setPreviewImage(p.image)}>
+                                  {p.image ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-5 h-5 text-pink-200" /></div>}
                                 </div>
                                 <div className="space-y-1">
                                   <span className="font-extrabold text-sm text-rose-950 block leading-tight">{p.name}</span>
-                                  <div className="flex gap-2">
+                                  <div className="flex gap-1.5">
                                     {p.isFeatured && <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-[8px] font-black uppercase tracking-widest rounded border border-amber-100">Featured</span>}
                                     {p.isSale && <span className="px-2 py-0.5 bg-rose-50 text-rose-700 text-[8px] font-black uppercase tracking-widest rounded border border-rose-100">Sale</span>}
                                   </div>
                                 </div>
                               </div>
                             </td>
-                            <td className="py-5 px-4 font-mono font-bold text-xs text-rose-900/60">{p.sku || 'N/A'}</td>
-                            <td className="py-5 px-4 font-extrabold text-xs text-rose-950/70">{p.category?.name || 'General'}</td>
+                            <td className="py-5 px-4 font-mono font-bold text-xs text-rose-900/60">{p.sku || '—'}</td>
+                            <td className="py-5 px-4 font-extrabold text-xs text-rose-950/70">{p.category?.name || '—'}</td>
                             <td className="py-5 px-4 text-sm font-bold">
                               {p.discountPrice ? (
-                                <div className="space-y-0.5">
+                                <div>
                                   <span className="text-rose-900 font-extrabold block">{formatPrice(p.discountPrice)}</span>
-                                  <span className="text-[10px] text-rose-900/40 line-through block">{formatPrice(p.price)}</span>
+                                  <span className="text-[10px] text-rose-900/40 line-through">{formatPrice(p.price)}</span>
                                 </div>
-                              ) : (
-                                <span className="text-rose-950 font-extrabold">{formatPrice(p.price)}</span>
-                              )}
+                              ) : <span className="text-rose-950 font-extrabold">{formatPrice(p.price)}</span>}
                             </td>
                             <td className="py-5 px-4 text-center">
-                              <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${p.stock <= 0 ? 'bg-red-50 text-red-600 border border-red-100' : p.stock < 5 ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                              <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${p.stock <= 0 ? 'bg-red-50 text-red-600 border border-red-100' : p.stock < 5 ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
                                 {p.stock} units
                               </span>
                             </td>
                             <td className="py-5 px-4 text-right">
                               <div className="flex justify-end gap-2">
-                                <button onClick={() => handleOpenProductModal(p)} className="p-2.5 rounded-xl bg-pink-50/50 text-rose-950 hover:bg-rose-900 hover:text-white transition-all cursor-pointer"><Edit className="w-3.5 h-3.5" /></button>
-                                <button onClick={() => handleDeleteProduct(p.id)} className="p-2.5 rounded-xl bg-pink-50/50 text-rose-950 hover:bg-red-600 hover:text-white transition-all cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => handleOpenProductModal(p)} aria-label={`Edit ${p.name}`} className="p-2.5 rounded-xl bg-pink-50/50 text-rose-950 hover:bg-rose-900 hover:text-white transition-all cursor-pointer"><Edit className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => handleDeleteProduct(p.id)} aria-label={`Delete ${p.name}`} className="p-2.5 rounded-xl bg-pink-50/50 text-rose-950 hover:bg-red-600 hover:text-white transition-all cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                               </div>
                             </td>
                           </tr>
@@ -640,6 +733,7 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                       </tbody>
                     </table>
                   </div>
+                  <Pagination page={productPage} totalPages={productTotalPages} onPage={setProductPage} />
                 </div>
               )}
 
@@ -719,10 +813,42 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                   <div>
                     <h3 className="font-serif font-black text-2xl text-rose-950">Order Management</h3>
                     <p className="text-[10px] text-rose-900/40 font-black uppercase tracking-wider mt-1">
-                      Full product snapshots with images — expand any order or open full details
+                      {filteredOrders.length} of {orders.length} orders
                     </p>
                   </div>
-                  <AdminOrdersSection orders={orders} onStatusChange={handleOrderStatusChange} />
+
+                  <SearchFilterBar
+                    search={orderSearch}
+                    onSearch={(v) => { setOrderSearch(v); setOrderPage(1); }}
+                    placeholder="Search by name, order ID, phone…"
+                    filters={[{
+                      label: 'All Statuses',
+                      value: 'status',
+                      options: [
+                        { label: 'Pending', value: 'pending' },
+                        { label: 'Confirmed', value: 'confirmed' },
+                        { label: 'Shipped', value: 'shipped' },
+                        { label: 'Delivered', value: 'delivered' },
+                        { label: 'Cancelled', value: 'cancelled' },
+                      ],
+                    }]}
+                    filterValues={{ status: orderStatus }}
+                    onFilter={(key, val) => { setOrderStatus(val); setOrderPage(1); }}
+                    sortOptions={[
+                      { label: 'Newest first', value: 'newest' },
+                      { label: 'Oldest first', value: 'oldest' },
+                      { label: 'Total: High→Low', value: 'totalDesc' },
+                      { label: 'Total: Low→High', value: 'totalAsc' },
+                    ]}
+                    sortValue={orderSort}
+                    onSort={(v) => { setOrderSort(v); setOrderPage(1); }}
+                  />
+
+                  <AdminOrdersSection
+                    orders={pagedOrders}
+                    onStatusChange={handleOrderStatusChange}
+                  />
+                  <Pagination page={orderPage} totalPages={orderTotalPages} onPage={setOrderPage} />
                 </div>
               )}
 
@@ -730,48 +856,90 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
               {activeTab === 'customers' && (
                 <div className="bg-white border border-pink-100/70 rounded-[2.5rem] p-8 shadow-sm space-y-6">
                   <div>
-                    <h3 className="font-serif font-black text-2xl text-rose-950">Client Base Directory</h3>
-                    <p className="text-[10px] text-rose-900/40 font-black uppercase tracking-wider mt-1">Review active customer accounts and verification statuses</p>
+                    <h3 className="font-serif font-black text-2xl text-rose-950">Client Directory</h3>
+                    <p className="text-[10px] text-rose-900/40 font-black uppercase tracking-wider mt-1">
+                      {filteredCustomers.length} of {customers.length} customers
+                    </p>
                   </div>
 
-                  <div className="overflow-x-auto custom-scrollbar">
-                    <table className="w-full text-left border-collapse">
+                  <SearchFilterBar
+                    search={customerSearch}
+                    onSearch={(v) => { setCustomerSearch(v); setCustomerPage(1); }}
+                    placeholder="Search by name, email, phone…"
+                    filters={[{
+                      label: 'All Customers',
+                      value: 'verified',
+                      options: [
+                        { label: 'Verified', value: 'verified' },
+                        { label: 'Unverified', value: 'unverified' },
+                      ],
+                    }]}
+                    filterValues={{ verified: customerVerified }}
+                    onFilter={(key, val) => { setCustomerVerified(val); setCustomerPage(1); }}
+                  />
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse" role="grid" aria-label="Customers table">
                       <thead>
                         <tr className="border-b border-pink-50 text-rose-950/40 font-black uppercase text-[10px] tracking-[0.2em]">
-                          <th className="py-4 px-4">Client Name</th>
-                          <th className="py-4 px-4">Email</th>
-                          <th className="py-4 px-4">Contact Phone</th>
-                          <th className="py-4 px-4">Email Verification</th>
-                          <th className="py-4 px-4">Join Date</th>
+                          <th scope="col" className="py-4 px-4">Customer</th>
+                          <th scope="col" className="py-4 px-4">Email</th>
+                          <th scope="col" className="py-4 px-4">Phone</th>
+                          <th scope="col" className="py-4 px-4">Orders</th>
+                          <th scope="col" className="py-4 px-4">Status</th>
+                          <th scope="col" className="py-4 px-4">Joined</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-pink-50/30">
-                        {customers.map((c) => (
-                          <tr key={c.id} className="hover:bg-pink-50/20 transition-colors">
-                            <td className="py-5 px-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 bg-pink-50 text-rose-950 font-black rounded-xl flex items-center justify-center text-xs">
-                                  {c.name.charAt(0)}
-                                </div>
-                                <span className="font-extrabold text-xs text-rose-950 block">{c.name}</span>
-                              </div>
-                            </td>
-                            <td className="py-5 px-4 text-xs font-semibold text-rose-900/80">{c.email}</td>
-                            <td className="py-5 px-4 text-xs font-bold text-rose-950/60">{c.phone || 'N/A'}</td>
-                            <td className="py-5 px-4">
-                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                c.isVerified ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
-                              }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${c.isVerified ? 'bg-emerald-600' : 'bg-red-500'}`} />
-                                <span>{c.isVerified ? 'Verified' : 'Unverified'}</span>
-                              </span>
-                            </td>
-                            <td className="py-5 px-4 text-xs font-semibold text-rose-950/40">{new Date(c.createdAt).toLocaleDateString()}</td>
-                          </tr>
-                        ))}
+                        {loading && pagedCustomers.length === 0
+                          ? <SkeletonTableRows rows={5} cols={6} />
+                          : pagedCustomers.length === 0
+                          ? <tr><td colSpan={6} className="py-16 text-center text-xs font-black text-rose-900/40 uppercase tracking-widest">No customers found</td></tr>
+                          : pagedCustomers.map((c) => {
+                            // Count this customer's orders from loaded orders list
+                            const customerOrders = orders.filter((o) => o.userId === c.id);
+                            const totalSpent = customerOrders
+                              .filter((o) => o.orderStatus !== 'cancelled')
+                              .reduce((sum, o) => sum + o.totalAmount, 0);
+
+                            return (
+                              <tr key={c.id} className="hover:bg-pink-50/20 transition-colors">
+                                <td className="py-5 px-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 bg-rose-900 text-white rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-sm" aria-hidden>
+                                      {c.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="font-extrabold text-xs text-rose-950">{c.name}</span>
+                                  </div>
+                                </td>
+                                <td className="py-5 px-4 text-xs font-semibold text-rose-900/80">{c.email}</td>
+                                <td className="py-5 px-4 text-xs font-bold text-rose-950/60">{c.phone || '—'}</td>
+                                <td className="py-5 px-4">
+                                  <div className="space-y-0.5">
+                                    <span className="text-xs font-black text-rose-950">{customerOrders.length} orders</span>
+                                    {totalSpent > 0 && (
+                                      <span className="block text-[10px] font-bold text-rose-600">{formatPrice(totalSpent)} total</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-5 px-4">
+                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                    c.isVerified ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
+                                  }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${c.isVerified ? 'bg-emerald-600' : 'bg-red-500'}`} aria-hidden />
+                                    {c.isVerified ? 'Verified' : 'Unverified'}
+                                  </span>
+                                </td>
+                                <td className="py-5 px-4 text-xs font-semibold text-rose-950/40">
+                                  {new Date(c.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
+                                </td>
+                              </tr>
+                            );
+                          })}
                       </tbody>
                     </table>
                   </div>
+                  <Pagination page={customerPage} totalPages={customerTotalPages} onPage={setCustomerPage} />
                 </div>
               )}
 
