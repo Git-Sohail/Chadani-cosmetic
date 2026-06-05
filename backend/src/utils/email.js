@@ -1,72 +1,57 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const { formatNpr } = require('./currency');
 
-// Create reusable transporter
-const getTransporter = () => {
-  const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT || 587;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+const FROM_ADDRESS = process.env.EMAIL_FROM || 'Chadani Cosmetic Store <onboarding@resend.dev>';
 
-  if (!host || !user || !pass) {
-    // If not configured, return null; we will handle fallback logging
-    return null;
-  }
-
-  return nodemailer.createTransport({
-    host,
-    port: parseInt(port),
-    secure: parseInt(port) === 465, // true for 465, false for other ports
-    auth: {
-      user,
-      pass,
-    },
-  });
-};
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  return new Resend(apiKey);
+}
 
 const sendEmail = async ({ to, subject, html, text }) => {
-  const from = process.env.SMTP_FROM || '"Chadani Cosmetic Store" <no-reply@chadanicosmetic.com>';
-  const transporter = getTransporter();
+  const resend = getResendClient();
 
-  if (!transporter) {
+  // ── Resend (production) ───────────────────────────────────────────────────
+  if (resend) {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: FROM_ADDRESS,
+        to,
+        subject,
+        html,
+        text,
+      });
+
+      if (error) {
+        console.error('[Resend] Send error:', error);
+        // Fall through to console fallback
+      } else {
+        console.log(`[Resend] Email sent: ${data?.id}`);
+        return { success: true, messageId: data?.id };
+      }
+    } catch (err) {
+      console.error('[Resend] Unexpected error:', err.message);
+      // Fall through to console fallback
+    }
+  }
+
+  // ── Console fallback (dev / Resend not configured) ────────────────────────
+  const allowFallback =
+    process.env.SMTP_FALLBACK_ON_ERROR === 'true' ||
+    process.env.NODE_ENV !== 'production';
+
+  if (allowFallback) {
     console.log('\n=========================================');
-    console.log(`[EMAIL FALLBACK LOG] Sending Email:`);
+    console.log('[EMAIL FALLBACK — email not sent via Resend]');
     console.log(`To: ${to}`);
     console.log(`Subject: ${subject}`);
-    console.log(`Text: ${text || 'See HTML content'}`);
-    console.log(`HTML: \n${html}`);
+    if (text) console.log(text);
     console.log('=========================================\n');
     return { success: true, fallback: true };
   }
 
-  try {
-    const info = await transporter.sendMail({
-      from,
-      to,
-      subject,
-      text,
-      html,
-    });
-    console.log(`Email sent successfully: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error('Error sending email via Nodemailer:', error.message || error);
-    // In development, log email to console so signup/OTP still works without valid SMTP
-    const allowFallback =
-      process.env.SMTP_FALLBACK_ON_ERROR === 'true' ||
-      process.env.NODE_ENV !== 'production';
-    if (allowFallback) {
-      console.log('\n=========================================');
-      console.log(`[EMAIL FALLBACK — SMTP send failed]`);
-      console.log(`To: ${to}`);
-      console.log(`Subject: ${subject}`);
-      console.log(`Text: ${text || '(see HTML in logs)'}`);
-      if (text) console.log(text);
-      console.log('=========================================\n');
-      return { success: true, fallback: true, smtpError: error.message };
-    }
-    return { success: false, error: error.message };
-  }
+  return { success: false, error: 'Email service not configured.' };
 };
 
 /**
