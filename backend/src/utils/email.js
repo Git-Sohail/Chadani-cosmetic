@@ -1,12 +1,19 @@
 const { Resend } = require('resend');
 const { formatNpr } = require('./currency');
 
+// Verify Resend is configured on startup
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+if (!RESEND_API_KEY) {
+  console.warn('[email] RESEND_API_KEY not set — emails will fall back to console logs');
+} else {
+  console.log('[email] Resend configured ✓');
+}
+
 const FROM_ADDRESS = process.env.EMAIL_FROM || 'Chadani Cosmetic Store <onboarding@resend.dev>';
 
 function getResendClient() {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
-  return new Resend(apiKey);
+  if (!RESEND_API_KEY) return null;
+  return new Resend(RESEND_API_KEY);
 }
 
 const sendEmail = async ({ to, subject, html, text }) => {
