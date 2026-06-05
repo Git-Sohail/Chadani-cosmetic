@@ -64,7 +64,7 @@ export default function Navbar() {
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center group">
               <img
-                src="/Logo.jpg"
+                src="/Logo.png"
                 alt="Chandani Cosmetic"
                 className="h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
                 style={{ mixBlendMode: 'multiply' }}

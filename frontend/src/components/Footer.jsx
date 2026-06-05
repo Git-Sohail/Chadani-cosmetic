@@ -49,7 +49,7 @@ export default function Footer() {
           <div className="space-y-4">
             <Link href="/" className="flex items-center">
               <img
-                src="/Logo.jpg"
+                src="/Logo.png"
                 alt="Chandani Cosmetic"
                 className="h-16 w-auto object-contain"
                 style={{ mixBlendMode: 'screen' }}

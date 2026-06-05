@@ -22,8 +22,8 @@ export const metadata = {
   title: "Chadani Cosmetic | Premium Beauty & Jewelry Store",
   description: "Treat your skin with the best organic treatment, professional makeup, and exquisite traditional bangles.",
   icons: {
-    icon: '/Logo.jpg',
-    apple: '/Logo.jpg',
+    icon: '/Logo.png',
+    apple: '/Logo.png',
   },
 };
 
