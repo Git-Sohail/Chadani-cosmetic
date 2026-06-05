@@ -85,7 +85,8 @@ async function findOrCreateFromGoogle(profile) {
       where: { id: user.id },
       data: {
         googleId: user.googleId || googleId,
-        profileImage: profileImage || user.profileImage,
+        // Only use Google's picture if user has no custom uploaded photo
+        profileImage: user.profileImage || profileImage || null,
         isVerified: true,
         name: user.name || name,
       },
