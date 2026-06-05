@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import ProductCard from '../../../../components/ProductCard';
 import Button from '../../../../components/Button';
 import ReviewSection from '../../../../components/ReviewSection';
+import { useToast } from '../../../../components/Toast';
 import { Heart, ShoppingCart, Star, Sparkles, ShieldCheck, Truck, RefreshCw, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../../../../context/AuthContext';
@@ -16,6 +17,7 @@ export default function ProductDetails() {
   const { API_URL } = useAuth();
   const { addToCart } = useCart();
   const { isWishlisted, addToWishlist, removeFromWishlist } = useWishlist();
+  const toast = useToast();
   
   const params = useParams();
   const router = useRouter();
@@ -74,7 +76,7 @@ export default function ProductDetails() {
   const handleAddToCart = async () => {
     if (product.stock > 0) {
       await addToCart(product, quantity);
-      alert(`Added ${quantity} x "${product.name}" to cart!`);
+      toast(`Added ${quantity} × "${product.name}" to cart`, 'success');
     }
   };
 

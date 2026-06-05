@@ -5,6 +5,8 @@ import { CartProvider } from "../context/CartContext";
 import { WishlistProvider } from "../context/WishlistContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { ChatProvider } from "../context/ChatContext";
+import ErrorBoundary from "../components/ErrorBoundary";
+import { ToastProvider } from "../components/Toast";
 
 const playfair = Playfair_Display({
   variable: "--font-serif",
@@ -38,7 +40,11 @@ export default function RootLayout({ children }) {
             <NotificationProvider>
               <CartProvider>
                 <WishlistProvider>
-                  {children}
+                  <ToastProvider>
+                    <ErrorBoundary>
+                      {children}
+                    </ErrorBoundary>
+                  </ToastProvider>
                 </WishlistProvider>
               </CartProvider>
             </NotificationProvider>

@@ -2,10 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Heart, ShoppingCart, Star, Sparkles } from 'lucide-react';
 import Button from './Button';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useToast } from './Toast';
 import { formatPrice } from '../utils/currency';
 
 export default function ProductCard({
@@ -24,6 +26,7 @@ export default function ProductCard({
 }) {
   const { addToCart } = useCart();
   const { isWishlisted, addToWishlist, removeFromWishlist } = useWishlist();
+  const toast = useToast();
 
   const wishlisted = isWishlisted(product.id);
 
@@ -31,8 +34,10 @@ export default function ProductCard({
     e.preventDefault();
     if (wishlisted) {
       await removeFromWishlist(product.id);
+      toast('Removed from wishlist', 'info');
     } else {
       await addToWishlist(product);
+      toast('Added to wishlist', 'success');
     }
   };
 
@@ -40,7 +45,7 @@ export default function ProductCard({
     e.preventDefault();
     if (product.stock > 0) {
       await addToCart(product, 1);
-      alert(`"${product.name}" added to cart!`);
+      toast(`"${product.name}" added to cart`, 'success');
     }
   };
 
@@ -78,7 +83,15 @@ export default function ProductCard({
         {/* Product image */}
         <Link href={`/shop/${product.id}`} className="w-full h-full flex items-center justify-center bg-gradient-to-tr from-pink-100/50 to-rose-200/50 group-hover:scale-105 transition-transform duration-500">
           {product.image ? (
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            <div className="relative w-full h-full">
+              <Image
+                src={product.image}
+                alt={product.name}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                className="object-cover"
+              />
+            </div>
           ) : (
             <div className="text-center p-4">
               <span className="font-serif italic font-semibold text-rose-900/60 block text-lg mb-1">

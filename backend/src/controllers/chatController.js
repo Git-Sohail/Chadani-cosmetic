@@ -307,14 +307,14 @@ const getUnreadTotal = async (req, res) => {
     }
 
     if (req.user.role === 'admin') {
-      const conversations = await prisma.conversation.findMany({
-        select: { id: true },
+      // Single aggregated query instead of N+1 loop
+      const result = await prisma.chatMessage.count({
+        where: {
+          senderRole: 'customer',
+          readAt: null,
+        },
       });
-      let total = 0;
-      for (const conv of conversations) {
-        total += await countUnread(conv.id, 'admin');
-      }
-      return res.json({ count: total });
+      return res.json({ count: result });
     }
 
     const conversation = await prisma.conversation.findUnique({

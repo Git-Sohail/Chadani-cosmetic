@@ -13,16 +13,17 @@ const {
 } = require('../controllers/authController');
 const { startGoogleAuth, googleCallback } = require('../controllers/googleAuthController');
 const { authenticateUser, isAdmin } = require('../middleware/auth');
+const { authLimiter, loginLimiter, otpLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
-router.get('/google', startGoogleAuth);
+router.get('/google', authLimiter, startGoogleAuth);
 router.get('/google/callback', googleCallback);
 
-router.post('/register', register);
-router.post('/verify-otp', verifyOtp);
-router.post('/resend-otp', resendOtp);
-router.post('/login', login);
+router.post('/register', authLimiter, register);
+router.post('/verify-otp', otpLimiter, verifyOtp);
+router.post('/resend-otp', otpLimiter, resendOtp);
+router.post('/login', loginLimiter, login);
 router.get('/me', authenticateUser, getMe);
 router.put('/profile', authenticateUser, updateProfile);
 router.post('/profile/avatar', authenticateUser, updateProfileAvatar);

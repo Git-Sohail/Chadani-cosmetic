@@ -4,6 +4,12 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
+  // Safety guard: never wipe production data accidentally
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[seed] Refusing to run in production. Set NODE_ENV != production to seed.');
+    process.exit(1);
+  }
+
   console.log('Starting seeding database...');
 
   // Clean old data (idempotent full reset)

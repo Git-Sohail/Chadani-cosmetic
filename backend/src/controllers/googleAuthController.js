@@ -5,7 +5,8 @@ const { OAuth2Client } = require('google-auth-library');
 const prisma = require('../db');
 const { formatUserForClient } = require('../utils/authPayload');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cosmetics_and_bangles_secret_key_123456';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('[googleAuth] JWT_SECRET environment variable is required');
 const ADMIN_EMAIL = 'admin@chadanicosmetic.com';
 
 function getGoogleConfig() {

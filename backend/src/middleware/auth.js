@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
 const prisma = require('../db');
 
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('[auth] JWT_SECRET environment variable is required');
+
 const authenticateUser = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -9,7 +12,7 @@ const authenticateUser = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'cosmetics_and_bangles_secret_key_123456');
+    const decoded = jwt.verify(token, JWT_SECRET);
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },

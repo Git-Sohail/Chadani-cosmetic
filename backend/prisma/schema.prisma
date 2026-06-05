@@ -89,6 +89,11 @@ model Product {
   wishlists     Wishlist[]
   orderItems    OrderItem[]
   reviews       Review[]
+
+  @@index([categoryId])
+  @@index([isFeatured])
+  @@index([isSale])
+  @@index([createdAt])
 }
 
 model ProductImage {
@@ -145,6 +150,10 @@ model Order {
 
   user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   orderItems    OrderItem[]
+
+  @@index([userId])
+  @@index([orderStatus])
+  @@index([createdAt])
 }
 
 model Conversation {
