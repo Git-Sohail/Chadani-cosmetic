@@ -128,6 +128,18 @@ const placeOrder = async (req, res) => {
       console.error('Failed to send order confirmation email:', err);
     });
 
+    // Notify admin in real-time via Socket.IO
+    const { getIo } = require('../socket');
+    const io = getIo();
+    if (io) {
+      io.to('admin_room').emit('new_order', {
+        orderId: orderDetails.id,
+        customerName: orderDetails.customerName,
+        totalAmount: orderDetails.totalAmount,
+        createdAt: orderDetails.createdAt,
+      });
+    }
+
     res.status(201).json(formatOrder(orderDetails));
   } catch (error) {
     console.error('Place order error:', error);
@@ -262,10 +274,35 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
+// In-memory store for new order count per admin session (resets when admin visits orders page)
+// This is per-process — good enough for single-instance free tier
+const newOrderCounts = new Map(); // socket room tracking is the primary mechanism
+
+const getNewOrderCount = async (req, res) => {
+  try {
+    // Count orders placed in the last 24 hours that are still pending
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const count = await prisma.order.count({
+      where: { orderStatus: 'pending', createdAt: { gte: since } },
+    });
+    res.json({ count });
+  } catch (error) {
+    console.error('Get new order count error:', error);
+    res.status(500).json({ error: 'Server error.' });
+  }
+};
+
+const resetNewOrderCount = async (req, res) => {
+  // No server state to reset — client handles its own badge
+  res.json({ ok: true });
+};
+
 module.exports = {
   placeOrder,
   getMyOrders,
   getAllOrders,
   getOrderDetails,
-  updateOrderStatus
+  updateOrderStatus,
+  getNewOrderCount,
+  resetNewOrderCount,
 };

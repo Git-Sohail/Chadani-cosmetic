@@ -10,6 +10,9 @@ import {
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import Logo from '../Logo';
+import { io as socketIO } from 'socket.io-client';
+
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
 
 const NAV_ITEMS = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, match: (p) => p === '/admin' },
@@ -32,6 +35,21 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [orderUnread, setOrderUnread] = useState(0);
+
+  // Socket.IO — listen for new orders
+  useEffect(() => {
+    if (!user || user.role !== 'admin') return;
+    const socket = socketIO(SOCKET_URL, { transports: ['websocket', 'polling'] });
+    socket.on('connect', () => socket.emit('join_admin'));
+    socket.on('new_order', () => setOrderUnread((n) => n + 1));
+    return () => socket.disconnect();
+  }, [user?.role]);
+
+  // Reset order badge when admin visits /admin/orders
+  useEffect(() => {
+    if (pathname.startsWith('/admin/orders')) setOrderUnread(0);
+  }, [pathname]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
@@ -90,6 +108,11 @@ export default function AdminLayout({ children }) {
                 {item.href === '/admin/messages' && chatUnread > 0 && (
                   <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[9px] font-black flex items-center justify-center" aria-label={`${chatUnread} unread messages`}>
                     {chatUnread > 9 ? '9+' : chatUnread}
+                  </span>
+                )}
+                {item.href === '/admin/orders' && orderUnread > 0 && (
+                  <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center" aria-label={`${orderUnread} new orders`}>
+                    {orderUnread > 9 ? '9+' : orderUnread}
                   </span>
                 )}
               </Link>

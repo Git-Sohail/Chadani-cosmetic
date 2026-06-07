@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '../../../components/Button';
 import GoogleSignInButton from '../../../components/GoogleSignInButton';
 import { useAuth } from '../../../context/AuthContext';
-import { Mail, Lock, User, Phone, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, Phone, Loader2, CheckCircle2 } from 'lucide-react';
+import Logo from '../../../components/Logo';
 
 function LoginContent() {
   const { login, register, user } = useAuth();
@@ -104,9 +105,9 @@ function LoginContent() {
       <div className="max-w-md mx-auto px-4 py-12">
         <div className="bg-white border border-pink-100 rounded-[2.5rem] shadow-xl p-8 sm:p-10 relative overflow-hidden">
           <div className="text-center space-y-2 mb-8">
-            <span className="inline-flex p-2.5 bg-rose-900 text-white rounded-full mx-auto shadow-md">
-              <Sparkles className="w-5 h-5" />
-            </span>
+            <div className="flex justify-center mb-3">
+              <Logo size="md" noLink />
+            </div>
             <h2 className="text-2xl sm:text-3xl font-serif font-black text-rose-950">
               {mode === 'login' ? 'Welcome Back' : 'Create Account'}
             </h2>
