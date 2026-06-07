@@ -5,13 +5,13 @@ import Link from 'next/link';
 
 const sizes = {
   sm: {
-    img: 'h-[44px] w-auto max-w-[110px] sm:h-[48px] sm:max-w-[120px]',
+    img: 'h-[48px] w-auto max-w-[130px] sm:h-[52px] sm:max-w-[140px]',
   },
   md: {
-    img: 'h-[48px] w-auto max-w-[120px] sm:h-[56px] sm:max-w-[140px] lg:h-[60px] lg:max-w-[150px]',
+    img: 'h-[52px] w-auto max-w-[140px] sm:h-[60px] sm:max-w-[165px] lg:h-[68px] lg:max-w-[185px]',
   },
   lg: {
-    img: 'h-[52px] w-auto max-w-[130px] sm:h-[60px] sm:max-w-[150px] lg:h-[72px] lg:max-w-[180px]',
+    img: 'h-[58px] w-auto max-w-[155px] sm:h-[66px] sm:max-w-[175px] lg:h-[80px] lg:max-w-[220px]',
   },
 };
 
@@ -31,7 +31,7 @@ export default function Logo({ size = 'md', href = '/', className = '', noLink =
     <img
       src="/Logo.png"
       alt="Chadani Cosmetic"
-      className={`${img} object-contain object-center select-none drop-shadow-[0_0_10px_rgba(255,255,255,0.85)] drop-shadow-[0_2px_8px_rgba(76,5,25,0.28)] saturate-110`}
+      className={`${img} object-contain object-center select-none contrast-[1.15] saturate-[1.2] drop-shadow-[0_2px_10px_rgba(76,5,25,0.35)]`}
       draggable={false}
     />
   );
