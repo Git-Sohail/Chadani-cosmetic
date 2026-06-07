@@ -113,8 +113,8 @@ export default function Home() {
           </section>
 
           {/* Special Offer/Sale Section */}
-          <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-gradient-to-br from-rose-950 to-pink-950 text-white rounded-[3rem] p-8 sm:p-16 shadow-2xl relative overflow-hidden group">
+          <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-gradient-to-br from-rose-950 to-pink-950 text-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 lg:p-16 shadow-2xl relative overflow-hidden group">
               {/* Abstract decorative elements */}
               <div className="absolute -top-24 -right-24 w-64 h-64 bg-rose-400/10 rounded-full blur-3xl group-hover:bg-rose-400/20 transition-all duration-700" />
               <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-pink-400/10 rounded-full blur-3xl group-hover:bg-pink-400/20 transition-all duration-700" />

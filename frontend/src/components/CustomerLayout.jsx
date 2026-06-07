@@ -31,7 +31,7 @@ export default function CustomerLayout({ children }) {
   return (
     <div className="flex flex-col min-h-screen bg-pink-50/20 selection:bg-rose-200 selection:text-rose-900 font-sans antialiased text-rose-950">
       <Navbar />
-      <main className="flex-grow pt-24 pb-12">{children}</main>
+      <main className="flex-grow pt-[var(--nav-height-mobile)] lg:pt-[var(--nav-height-desktop)] pb-12">{children}</main>
       <Footer />
       <ChatWidget />
     </div>

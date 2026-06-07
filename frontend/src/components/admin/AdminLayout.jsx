@@ -6,9 +6,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, ShoppingBag, Layers, FileSpreadsheet,
-  MessageSquare, LogOut, Sparkles, Loader2, Menu, X, Users,
+  MessageSquare, LogOut, Loader2, Menu, X, Users,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
+import Logo from '../Logo';
 
 const NAV_ITEMS = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, match: (p) => p === '/admin' },
@@ -68,12 +69,7 @@ export default function AdminLayout({ children }) {
     <div className="flex flex-col h-full justify-between">
       <div className="p-6 space-y-8">
         <div className="space-y-1">
-          <h1 className="text-2xl font-serif font-black text-rose-950 flex items-center gap-2">
-            <span className="p-1.5 bg-rose-900 text-white rounded-xl shadow-md">
-              <Sparkles className="w-5 h-5" />
-            </span>
-            Chadani
-          </h1>
+          <Logo size="md" href="/admin" />
           <p className="text-[9px] text-rose-900/40 font-black uppercase tracking-[0.25em] pl-1">Admin Suite</p>
         </div>
         <nav className="space-y-1.5" role="navigation" aria-label="Admin navigation">
@@ -141,7 +137,7 @@ export default function AdminLayout({ children }) {
 
       {/* Mobile sidebar drawer */}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-white border-r border-pink-100/70 z-50 flex flex-col transition-transform duration-300 lg:hidden ${
+        className={`fixed top-0 left-0 h-full w-[min(100vw-3rem,18rem)] sm:w-72 bg-white border-r border-pink-100/70 z-50 flex flex-col transition-transform duration-300 lg:hidden ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Mobile navigation"
@@ -159,27 +155,29 @@ export default function AdminLayout({ children }) {
 
       {/* Main content */}
       <div className="flex-grow flex flex-col min-h-screen overflow-hidden">
-        <header className="px-4 lg:px-10 py-4 lg:py-5 bg-white border-b border-pink-100/50 flex items-center justify-between shrink-0 z-40 shadow-sm shadow-pink-100/5">
-          <div className="flex items-center gap-3">
-            {/* Mobile menu button */}
+        <header className="sticky top-0 z-40 px-4 sm:px-6 lg:px-10 h-16 lg:h-[72px] bg-white/95 backdrop-blur-md border-b border-pink-100/50 flex items-center justify-between shrink-0 shadow-sm shadow-pink-100/10">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-xl text-rose-900/60 hover:bg-pink-50 transition-colors lg:hidden"
+              className="p-2 rounded-xl text-rose-900/60 hover:bg-pink-50 transition-colors lg:hidden shrink-0"
               aria-label="Open menu"
               aria-expanded={sidebarOpen}
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2 text-rose-950/40 text-xs font-bold capitalize" aria-label="Breadcrumb">
-              <span>Admin</span>
-              <span aria-hidden>/</span>
-              <span className="text-rose-950 font-black tracking-wide">{breadcrumbLabel(pathname)}</span>
+            <div className="lg:hidden shrink-0">
+              <Logo size="sm" href="/admin" />
+            </div>
+            <div className="flex items-center gap-2 text-rose-950/40 text-[11px] sm:text-xs font-bold capitalize min-w-0" aria-label="Breadcrumb">
+              <span className="hidden sm:inline">Admin</span>
+              <span className="hidden sm:inline" aria-hidden>/</span>
+              <span className="text-rose-950 font-black tracking-wide truncate">{breadcrumbLabel(pathname)}</span>
             </div>
           </div>
         </header>
         <main className="flex-grow overflow-y-auto custom-scrollbar" id="main-content">
-          <div className="p-4 lg:p-10 max-w-7xl w-full mx-auto">{children}</div>
+          <div className="p-4 sm:p-6 lg:p-10 max-w-7xl w-full mx-auto">{children}</div>
         </main>
       </div>
     </div>

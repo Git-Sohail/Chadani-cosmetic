@@ -116,8 +116,9 @@ export function ShopContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Banner Section */}
-        <div className="bg-gradient-to-r from-pink-100 to-rose-100 rounded-[2.5rem] p-8 sm:p-12 mb-10 text-center sm:text-left relative overflow-hidden border border-pink-200/40">
-          <div className="max-w-xl relative z-10 space-y-3">
+        <div className="relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] mb-8 sm:mb-10 border border-pink-200/40 bg-gradient-to-br from-pink-100 via-rose-100 to-pink-50 aspect-[4/5] sm:aspect-[16/9] lg:aspect-[21/9] min-h-[320px] sm:min-h-[280px] lg:min-h-[300px]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_50%,rgba(251,207,232,0.5),transparent_55%)] pointer-events-none" />
+          <div className="relative z-10 h-full flex flex-col justify-center p-6 sm:p-10 lg:p-12 text-center sm:text-left max-w-xl mx-auto sm:mx-0 sm:ml-8 lg:ml-12 space-y-3">
             <span className="text-xs font-bold uppercase tracking-widest text-rose-800 bg-white/50 px-3 py-1 rounded-full">
               Chadani Cosmetic Catalog
             </span>
@@ -128,7 +129,7 @@ export function ShopContent() {
               Find the perfect skincare treats, vibrant lipsticks, elegant Gold-plated bangle sets, and handpicked premium jewelry.
             </p>
           </div>
-          <div className="absolute right-10 bottom-0 opacity-10 text-rose-900 font-serif text-8xl font-bold select-none hidden lg:block">
+          <div className="absolute right-6 lg:right-10 bottom-2 lg:bottom-0 opacity-10 text-rose-900 font-serif text-5xl sm:text-7xl lg:text-8xl font-bold select-none pointer-events-none hidden sm:block">
             BEAUTY
           </div>
         </div>
@@ -178,7 +179,7 @@ export function ShopContent() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
           
           {/* Filters Sidebar (Desktop) */}
-          <aside className={`lg:block ${showFiltersMobile ? 'block' : 'hidden'} space-y-8 bg-white border border-pink-100 p-8 rounded-[2rem] h-fit shadow-sm sticky top-28`}>
+          <aside className={`lg:block ${showFiltersMobile ? 'block' : 'hidden'} space-y-8 bg-white border border-pink-100 p-6 sm:p-8 rounded-[2rem] h-fit shadow-sm sticky top-[calc(var(--nav-height-mobile)+1rem)] lg:top-[calc(var(--nav-height-desktop)+1.5rem)]`}>
             
             <div className="flex items-center justify-between pb-5 border-b border-pink-50">
               <span className="font-serif font-black text-rose-950 flex items-center gap-2 text-lg">

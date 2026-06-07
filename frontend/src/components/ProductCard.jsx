@@ -52,7 +52,7 @@ export default function ProductCard({
   return (
     <div className="group relative bg-white border border-pink-100/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-305 flex flex-col h-full">
       {/* Product Image and Overlay */}
-      <div className="relative aspect-square bg-pink-50/50 overflow-hidden flex items-center justify-center">
+      <div className="relative h-[200px] sm:h-[220px] lg:h-[280px] bg-pink-50/50 overflow-hidden flex items-center justify-center">
         {/* Badges */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
           {product.isSale && (
@@ -89,7 +89,7 @@ export default function ProductCard({
                 alt={product.name}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                className="object-cover"
+                className="object-cover object-center"
               />
             </div>
           ) : (

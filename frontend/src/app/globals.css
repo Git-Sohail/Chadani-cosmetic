@@ -3,6 +3,8 @@
 :root {
   --background: #fdf2f8; /* pink-50 */
   --foreground: #4c0519; /* rose-950 */
+  --nav-height-mobile: 68px;
+  --nav-height-desktop: 88px;
 }
 
 @theme inline {

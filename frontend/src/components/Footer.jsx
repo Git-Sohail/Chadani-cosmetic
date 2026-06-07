@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Phone, MapPin, Heart, Sparkles } from 'lucide-react';
 import Button from './Button';
+import Logo from './Logo';
 
 export default function Footer() {
   const pathname = usePathname();
@@ -47,13 +48,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 py-12 text-sm">
           {/* Logo & About */}
           <div className="space-y-4">
-            <Link href="/" className="flex items-center">
-              <img
-                src="/Logo.png"
-                alt="Chandani Cosmetic"
-                className="h-20 w-auto object-contain"
-              />
-            </Link>
+            <Logo size="lg" href="/" className="brightness-110" />
             <p className="text-pink-200/70 leading-relaxed">
               Bringing you premium quality skincare treatments, beauty cosmetics, and handcrafted bangles. Pamper yourself with the elegance you deserve.
             </p>
