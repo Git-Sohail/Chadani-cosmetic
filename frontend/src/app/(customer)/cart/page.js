@@ -156,7 +156,7 @@ export default function CartPage() {
               <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3 flex items-start gap-2.5">
                 <AlertCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span className="text-[11px] font-medium text-emerald-800 leading-normal">
-                  Congrats! Your order is eligible for **Free Standard Shipping** across NY and other states.
+                  Free delivery inside Dharan — your order qualifies for free shipping!
                 </span>
               </div>
 
