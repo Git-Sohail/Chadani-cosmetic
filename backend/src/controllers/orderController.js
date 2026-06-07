@@ -12,6 +12,7 @@ const placeOrder = async (req, res) => {
     const {
       customerName, phone, address,
       city, area, postalCode,
+      deliveryWard, deliveryArea, deliveryLandmark,
       deliveryLat, deliveryLng, deliveryMapUrl,
       paymentMethod,
     } = req.body;
@@ -62,6 +63,9 @@ const placeOrder = async (req, res) => {
           city: city || null,
           area: area || null,
           postalCode: postalCode || null,
+          deliveryWard: deliveryWard || null,
+          deliveryArea: deliveryArea || null,
+          deliveryLandmark: deliveryLandmark || null,
           deliveryLat: deliveryLat ? parseFloat(deliveryLat) : null,
           deliveryLng: deliveryLng ? parseFloat(deliveryLng) : null,
           deliveryMapUrl: deliveryMapUrl || null,

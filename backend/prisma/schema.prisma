@@ -140,6 +140,9 @@ model Order {
   city          String?
   area          String?
   postalCode    String?
+  deliveryWard  String?
+  deliveryArea  String?
+  deliveryLandmark String?
   deliveryLat   Float?
   deliveryLng   Float?
   deliveryMapUrl String?

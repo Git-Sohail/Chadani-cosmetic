@@ -77,20 +77,20 @@ export default function OrderSummaryPanel({ order, statusControl = null }) {
       {/* Delivery address section */}
       <div className="border-t border-pink-50 pt-5 space-y-3">
         <h3 className="text-xs font-black uppercase tracking-widest text-rose-900 flex items-center gap-2">
-          <MapPin className="w-4 h-4" /> Delivery Address
+          <MapPin className="w-4 h-4" /> Delivery Address — Dharan
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div className="bg-pink-50/40 rounded-2xl p-4 space-y-2">
-            <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">Street Address</p>
-            <p className="font-medium text-rose-950 leading-relaxed">{order.address || order.deliveryAddress}</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">Ward & Area</p>
+            <p className="font-black text-rose-950">{order.deliveryWard || order.city || '—'}</p>
+            <p className="font-bold text-rose-950/70 text-xs">{order.deliveryArea || order.area || '—'}</p>
           </div>
           <div className="bg-pink-50/40 rounded-2xl p-4 space-y-2">
-            <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">City & Area</p>
-            <p className="font-bold text-rose-950">{order.city || '—'}</p>
-            {order.area && <p className="text-rose-900/60 font-medium text-xs">{order.area}</p>}
-            {order.postalCode && (
+            <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">Detailed Address</p>
+            <p className="font-medium text-rose-950 leading-relaxed">{order.address || order.deliveryAddress || '—'}</p>
+            {(order.deliveryLandmark || order.postalCode) && (
               <p className="text-[10px] text-rose-900/50 font-semibold">
-                Postal / Landmark: {order.postalCode}
+                📍 {order.deliveryLandmark || order.postalCode}
               </p>
             )}
           </div>
@@ -103,24 +103,23 @@ export default function OrderSummaryPanel({ order, statusControl = null }) {
             <div className="flex flex-wrap items-center gap-3">
               <a href={mapUrl} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-wider hover:bg-emerald-700 transition-colors">
-                <ExternalLink className="w-3.5 h-3.5" /> Open in Google Maps
+                <ExternalLink className="w-3.5 h-3.5" /> Open Delivery Location
               </a>
               <span className="text-[10px] text-rose-900/40 font-mono">
                 {Number(order.deliveryLat).toFixed(5)}, {Number(order.deliveryLng).toFixed(5)}
               </span>
             </div>
-            {/* Embedded map preview */}
             <iframe
               title="Delivery Location"
               width="100%"
-              height="160"
+              height="180"
               loading="lazy"
               className="rounded-xl border border-emerald-100"
-              src={`https://maps.google.com/maps?q=${order.deliveryLat},${order.deliveryLng}&z=15&output=embed`}
+              src={`https://maps.google.com/maps?q=${order.deliveryLat},${order.deliveryLng}&z=16&output=embed`}
             />
           </div>
         ) : (
-          <p className="text-xs text-rose-900/40 font-semibold italic">No GPS location provided — manual address only.</p>
+          <p className="text-xs text-rose-900/40 font-semibold italic">No GPS location — use manual address for delivery.</p>
         )}
       </div>
     </div>
