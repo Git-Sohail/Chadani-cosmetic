@@ -10,6 +10,7 @@ const {
   updateProfile,
   updateProfileAvatar,
   removeProfileAvatar,
+  changePassword,
 } = require('../controllers/authController');
 const { startGoogleAuth, googleCallback } = require('../controllers/googleAuthController');
 const { authenticateUser, isAdmin } = require('../middleware/auth');
@@ -28,6 +29,7 @@ router.get('/me', authenticateUser, getMe);
 router.put('/profile', authenticateUser, updateProfile);
 router.post('/profile/avatar', authenticateUser, updateProfileAvatar);
 router.delete('/profile/avatar', authenticateUser, removeProfileAvatar);
+router.put('/profile/password', authenticateUser, changePassword);
 router.get('/users/count', authenticateUser, isAdmin, getUserCount);
 router.get('/customers', authenticateUser, isAdmin, getAllCustomers);
 
