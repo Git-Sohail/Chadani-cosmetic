@@ -15,46 +15,28 @@ const sizes = {
   },
 };
 
-const variants = {
-  default: '',
-  contrast:
-    'bg-gradient-to-br from-rose-950 via-rose-900 to-rose-950 rounded-xl px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-lg shadow-rose-900/25 border border-rose-800/40',
-};
-
 /**
  * Reusable Logo component.
  *
  * Props:
  *  size      — 'sm' | 'md' | 'lg'   (default 'md')
- *  variant   — 'default' | 'contrast' (dark pill for light backgrounds)
  *  href      — link target           (default '/')
  *  className — extra wrapper classes
  *  noLink    — render img only, no <Link> wrapper
  */
-export default function Logo({
-  size = 'md',
-  variant = 'default',
-  href = '/',
-  className = '',
-  noLink = false,
-}) {
+export default function Logo({ size = 'md', href = '/', className = '', noLink = false }) {
   const { img } = sizes[size] || sizes.md;
-  const variantClass = variants[variant] || variants.default;
 
   const image = (
     <img
       src="/Logo.png"
       alt="Chadani Cosmetic"
-      className={`${img} object-contain object-center select-none ${
-        variant === 'contrast'
-          ? 'brightness-110 contrast-105 drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)]'
-          : 'drop-shadow-[0_2px_8px_rgba(76,5,25,0.2)]'
-      }`}
+      className={`${img} object-contain object-center select-none drop-shadow-[0_0_10px_rgba(255,255,255,0.85)] drop-shadow-[0_2px_8px_rgba(76,5,25,0.28)] saturate-110`}
       draggable={false}
     />
   );
 
-  const wrapperClass = `inline-flex items-center justify-center shrink-0 ${variantClass} ${className}`.trim();
+  const wrapperClass = `inline-flex items-center justify-center shrink-0 ${className}`.trim();
 
   if (noLink) {
     return <div className={wrapperClass}>{image}</div>;
