@@ -69,7 +69,7 @@ export default function AdminLayout({ children }) {
     <div className="flex flex-col h-full justify-between">
       <div className="p-6 space-y-8">
         <div className="space-y-1">
-          <Logo size="md" href="/admin" />
+          <Logo size="md" variant="contrast" href="/admin" />
           <p className="text-[9px] text-rose-900/40 font-black uppercase tracking-[0.25em] pl-1">Admin Suite</p>
         </div>
         <nav className="space-y-1.5" role="navigation" aria-label="Admin navigation">
@@ -167,7 +167,7 @@ export default function AdminLayout({ children }) {
               <Menu className="w-5 h-5" />
             </button>
             <div className="lg:hidden shrink-0">
-              <Logo size="sm" href="/admin" />
+              <Logo size="sm" variant="contrast" href="/admin" />
             </div>
             <div className="flex items-center gap-2 text-rose-950/40 text-[11px] sm:text-xs font-bold capitalize min-w-0" aria-label="Breadcrumb">
               <span className="hidden sm:inline">Admin</span>
