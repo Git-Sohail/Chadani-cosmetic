@@ -115,7 +115,7 @@ export default function OrderSummaryPanel({ order, statusControl = null }) {
               height="180"
               loading="lazy"
               className="rounded-xl border border-emerald-100"
-              src={`https://maps.google.com/maps?q=${order.deliveryLat},${order.deliveryLng}&z=16&output=embed`}
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(order.deliveryLng) - 0.005},${Number(order.deliveryLat) - 0.003},${Number(order.deliveryLng) + 0.005},${Number(order.deliveryLat) + 0.003}&layer=mapnik&marker=${order.deliveryLat},${order.deliveryLng}`}
             />
           </div>
         ) : (

@@ -60,7 +60,7 @@ function ManualPinModal({ onClose, onConfirm, initial }) {
             width="100%"
             height="100%"
             loading="lazy"
-            src={`https://maps.google.com/maps?q=${pinLat},${pinLng}&z=16&output=embed`}
+            src={`https://www.openstreetmap.org/export/embed.html?bbox=${pinLng - 0.005},${pinLat - 0.003},${pinLng + 0.005},${pinLat + 0.003}&layer=mapnik&marker=${pinLat},${pinLng}`}
           />
         </div>
 
@@ -393,7 +393,7 @@ export default function CheckoutPage() {
                     </a>
                     <div className="rounded-xl overflow-hidden border border-emerald-100 h-32 mt-2">
                       <iframe title="Location preview" width="100%" height="100%" loading="lazy"
-                        src={`https://maps.google.com/maps?q=${gps.lat},${gps.lng}&z=16&output=embed`} />
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${gps.lng - 0.004},${gps.lat - 0.003},${gps.lng + 0.004},${gps.lat + 0.003}&layer=mapnik&marker=${gps.lat},${gps.lng}`} />
                     </div>
                     <p className="text-[10px] text-rose-900/30 font-mono">{gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}</p>
                   </div>
