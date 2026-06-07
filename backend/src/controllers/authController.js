@@ -236,6 +236,48 @@ const getAllCustomers = async (req, res) => {
   }
 };
 
+const deleteCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if user is an admin - we should not allow deleting other admins via this route
+    const targetUser = await prisma.user.findUnique({ where: { id } });
+    if (!targetUser) return res.status(404).json({ error: 'Customer not found.' });
+    if (targetUser.role === 'admin') {
+      return res.status(403).json({ error: 'Cannot delete an administrator.' });
+    }
+
+    await prisma.user.delete({ where: { id } });
+    res.json({ message: 'Customer account deleted successfully.' });
+  } catch (error) {
+    console.error('Delete customer error:', error);
+    res.status(500).json({ error: 'Server error deleting customer.' });
+  }
+};
+
+const updateCustomerStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isVerified } = req.body;
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { isVerified: !!isVerified },
+    });
+
+    res.json({
+      message: `Customer ${user.isVerified ? 'verified' : 'unverified'} successfully.`,
+      user: {
+        id: user.id,
+        isVerified: user.isVerified
+      }
+    });
+  } catch (error) {
+    console.error('Update customer status error:', error);
+    res.status(500).json({ error: 'Server error updating customer status.' });
+  }
+};
+
 const getMe = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });

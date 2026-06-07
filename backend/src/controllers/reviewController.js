@@ -249,6 +249,7 @@ const deleteReview = async (req, res) => {
 
 module.exports = {
   getProductReviews,
+  getAllReviews,
   canReview,
   createReview,
   updateReview,

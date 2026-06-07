@@ -20,12 +20,14 @@ const NAV_ITEMS = [
   { name: 'Collections', href: '/admin/categories', icon: Layers, match: (p) => p.startsWith('/admin/categories') || p.startsWith('/admin/collections') },
   { name: 'Orders', href: '/admin/orders', icon: FileSpreadsheet, match: (p) => p.startsWith('/admin/orders') },
   { name: 'Customers', href: '/admin/customers', icon: Users, match: (p) => p.startsWith('/admin/customers') },
+  { name: 'Reviews', href: '/admin/reviews', icon: MessageSquare, match: (p) => p.startsWith('/admin/reviews') },
   { name: 'Messages', href: '/admin/messages', icon: MessageSquare, match: (p) => p.startsWith('/admin/messages') },
 ];
 
 function breadcrumbLabel(pathname) {
   if (pathname === '/admin') return 'dashboard';
   const segment = pathname.split('/').filter(Boolean)[1];
+  if (segment === 'categories' || segment === 'collections') return 'collections';
   return segment || 'dashboard';
 }
 

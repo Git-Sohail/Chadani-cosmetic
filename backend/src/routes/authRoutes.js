@@ -32,5 +32,7 @@ router.delete('/profile/avatar', authenticateUser, removeProfileAvatar);
 router.put('/profile/password', authenticateUser, changePassword);
 router.get('/users/count', authenticateUser, isAdmin, getUserCount);
 router.get('/customers', authenticateUser, isAdmin, getAllCustomers);
+router.put('/customers/:id/status', authenticateUser, isAdmin, updateCustomerStatus);
+router.delete('/customers/:id', authenticateUser, isAdmin, deleteCustomer);
 
 module.exports = router;

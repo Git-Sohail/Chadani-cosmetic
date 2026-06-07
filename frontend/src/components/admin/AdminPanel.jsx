@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   ShoppingBag, Layers, FileSpreadsheet, Users, AlertTriangle, TrendingUp,
   Plus, Edit, Trash2, X, Sparkles, RefreshCw, FolderPlus, Loader2,
-  ShieldCheck, IndianRupee, Package, Image as ImageIcon,
+  ShieldCheck, IndianRupee, Package, Image as ImageIcon, MessageSquare,
 } from 'lucide-react';
 import axios from 'axios';
 import AdminOrdersSection from './AdminOrdersSection';
@@ -29,6 +29,7 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
   const [categories, setCategories] = useState([]);
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Modals & details
@@ -77,6 +78,10 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
   const [customerVerified, setCustomerVerified] = useState('');
   const [customerPage, setCustomerPage] = useState(1);
 
+  const [reviewSearch, setReviewSearch] = useState('');
+  const [reviewRating, setReviewRating] = useState('');
+  const [reviewPage, setReviewPage] = useState(1);
+
   // Settings mock state
   const [settingsForm, setSettingsForm] = useState({
     storeName: 'Chadani Cosmetic Store',
@@ -100,17 +105,19 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
     try {
       const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
       
-      const [prodRes, catRes, orderRes, custRes] = await Promise.all([
+      const [prodRes, catRes, orderRes, custRes, reviewRes] = await Promise.all([
         axios.get(`${API_URL}/products`),
         axios.get(`${API_URL}/categories`),
         axios.get(`${API_URL}/orders`, authHeaders),
-        axios.get(`${API_URL}/auth/customers`, authHeaders)
+        axios.get(`${API_URL}/auth/customers`, authHeaders),
+        axios.get(`${API_URL}/reviews`, authHeaders).catch(() => ({ data: [] }))
       ]);
       
       setProducts(prodRes.data);
       setCategories(catRes.data);
       setOrders(orderRes.data);
       setCustomers(custRes.data);
+      setReviews(reviewRes.data);
     } catch (error) {
       console.error('Error fetching admin data:', error);
       showToast('Error syncing live database records.', 'error');
@@ -135,9 +142,10 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
       productsCount: products.length,
       ordersCount: orders.length,
       totalSales: totalSales,
-      customersCount: customers.length
+      customersCount: customers.length,
+      reviewsCount: reviews.length
     };
-  }, [products, orders, customers]);
+  }, [products, orders, customers, reviews]);
 
   // Stock alerts
   const lowStockProducts = useMemo(() => {
@@ -435,6 +443,46 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
     }
   };
 
+  // Customer Actions
+  const handleToggleCustomerVerify = async (customerId, currentStatus) => {
+    try {
+      await axios.put(`${API_URL}/auth/customers/${customerId}/status`, { isVerified: !currentStatus }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      showToast(`Customer ${!currentStatus ? 'verified' : 'unverified'}.`);
+      fetchData();
+    } catch (error) {
+      showToast('Failed to update customer status.', 'error');
+    }
+  };
+
+  const handleDeleteCustomer = async (customerId) => {
+    if (!confirm('Are you sure you want to permanently delete this customer account? This cannot be undone.')) return;
+    try {
+      await axios.delete(`${API_URL}/auth/customers/${customerId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      showToast('Customer account deleted.');
+      fetchData();
+    } catch (error) {
+      showToast(error.response?.data?.error || 'Failed to delete customer.', 'error');
+    }
+  };
+
+  // Review Actions
+  const handleDeleteReview = async (reviewId) => {
+    if (!confirm('Are you sure you want to delete this review?')) return;
+    try {
+      await axios.delete(`${API_URL}/reviews/${reviewId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      showToast('Review deleted.');
+      fetchData();
+    } catch (error) {
+      showToast('Failed to delete review.', 'error');
+    }
+  };
+
   // Order workflow status updates
   const handleOrderStatusChange = async (orderId, newStatus) => {
     try {
@@ -556,8 +604,9 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                       { name: 'Total Revenue', value: formatPrice(stats.totalSales), icon: TrendingUp, desc: 'Gross Earnings', color: 'bg-rose-50 text-rose-900 border-rose-100' },
                       { name: 'Orders Processed', value: stats.ordersCount, icon: FileSpreadsheet, desc: 'Sales Logged', color: 'bg-pink-50 text-pink-900 border-pink-100' },
                       { name: 'Active Catalog', value: stats.productsCount, icon: ShoppingBag, desc: 'Total SKUs', color: 'bg-amber-50 text-amber-900 border-amber-100' },
-                      { name: 'Client Directory', value: stats.customersCount, icon: Users, desc: 'Registered Buyers', color: 'bg-emerald-50 text-emerald-900 border-emerald-100' },
-                    ].map((m, idx) => {
+                      { name: 'Client Directory', value: stats.customersCount, icon: Users, desc: 'Registered Buyers', color: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+                      { name: 'Client Feedback', value: stats.reviewsCount, icon: MessageSquare, desc: 'Total Reviews', color: 'bg-blue-50 text-blue-900 border-blue-100' },
+                      ].map((m, idx) => {
                       const Icon = m.icon;
                       return (
                         <div key={idx} className="bg-white border border-pink-50 rounded-[2rem] p-7 shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
@@ -923,15 +972,24 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                                   </div>
                                 </td>
                                 <td className="py-5 px-4">
-                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                    c.isVerified ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
-                                  }`}>
+                                  <button
+                                    onClick={() => handleToggleCustomerVerify(c.id, c.isVerified)}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
+                                      c.isVerified ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100' : 'bg-red-50 text-red-600 border border-red-100 hover:bg-red-100'
+                                    }`}
+                                  >
                                     <span className={`w-1.5 h-1.5 rounded-full ${c.isVerified ? 'bg-emerald-600' : 'bg-red-500'}`} aria-hidden />
                                     {c.isVerified ? 'Verified' : 'Unverified'}
-                                  </span>
+                                  </button>
                                 </td>
-                                <td className="py-5 px-4 text-xs font-semibold text-rose-950/40">
-                                  {new Date(c.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
+                                <td className="py-5 px-4 text-right">
+                                  <button
+                                    onClick={() => handleDeleteCustomer(c.id)}
+                                    className="p-2 rounded-xl bg-pink-50/50 text-rose-950 hover:bg-red-600 hover:text-white transition-all cursor-pointer"
+                                    title="Delete Customer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
                                 </td>
                               </tr>
                             );
@@ -940,6 +998,99 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                     </table>
                   </div>
                   <Pagination page={customerPage} totalPages={customerTotalPages} onPage={setCustomerPage} />
+                </div>
+              )}
+
+              {/* ==================== REVIEWS TAB ==================== */}
+              {activeTab === 'reviews' && (
+                <div className="bg-white border border-pink-100/70 rounded-[2.5rem] p-8 shadow-sm space-y-6">
+                  <div>
+                    <h3 className="font-serif font-black text-2xl text-rose-950">Customer Reviews</h3>
+                    <p className="text-[10px] text-rose-900/40 font-black uppercase tracking-wider mt-1">
+                      {filteredReviews.length} of {reviews.length} reviews
+                    </p>
+                  </div>
+
+                  <SearchFilterBar
+                    search={reviewSearch}
+                    onSearch={(v) => { setReviewSearch(v); setReviewPage(1); }}
+                    placeholder="Search by customer, product, comment…"
+                    filters={[{
+                      label: 'All Ratings',
+                      value: 'rating',
+                      options: [
+                        { label: '5 Stars', value: '5' },
+                        { label: '4 Stars', value: '4' },
+                        { label: '3 Stars', value: '3' },
+                        { label: '2 Stars', value: '2' },
+                        { label: '1 Star', value: '1' },
+                      ],
+                    }]}
+                    filterValues={{ rating: reviewRating }}
+                    onFilter={(key, val) => { setReviewRating(val); setReviewPage(1); }}
+                  />
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse" role="grid" aria-label="Reviews table">
+                      <thead>
+                        <tr className="border-b border-pink-50 text-rose-950/40 font-black uppercase text-[10px] tracking-[0.2em]">
+                          <th scope="col" className="py-4 px-4">Product</th>
+                          <th scope="col" className="py-4 px-4">Customer</th>
+                          <th scope="col" className="py-4 px-4">Rating</th>
+                          <th scope="col" className="py-4 px-4">Comment</th>
+                          <th scope="col" className="py-4 px-4">Date</th>
+                          <th scope="col" className="py-4 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-pink-50/30">
+                        {loading && pagedReviews.length === 0
+                          ? <SkeletonTableRows rows={5} cols={6} />
+                          : pagedReviews.length === 0
+                          ? <tr><td colSpan={6} className="py-16 text-center text-xs font-black text-rose-900/40 uppercase tracking-widest">No reviews found</td></tr>
+                          : pagedReviews.map((r) => (
+                            <tr key={r.id} className="hover:bg-pink-50/20 transition-colors">
+                              <td className="py-5 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-lg overflow-hidden border border-pink-100 bg-pink-50 shrink-0">
+                                    {r.product?.image ? <img src={r.product.image} alt={r.product.name} className="w-full h-full object-cover" /> : <ImageIcon className="w-full h-full p-2 text-pink-200" />}
+                                  </div>
+                                  <span className="font-extrabold text-xs text-rose-950 truncate max-w-[150px]">{r.product?.name || 'Deleted Product'}</span>
+                                </div>
+                              </td>
+                              <td className="py-5 px-4">
+                                <div className="space-y-0.5">
+                                  <span className="font-bold text-xs text-rose-950 block">{r.user?.name || 'Anonymous'}</span>
+                                  <span className="text-[10px] text-rose-900/40 font-semibold block">{r.user?.email || ''}</span>
+                                </div>
+                              </td>
+                              <td className="py-5 px-4">
+                                <div className="flex items-center gap-0.5 text-amber-500">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Sparkles key={i} className={`w-3 h-3 ${i < r.rating ? 'fill-current' : 'text-pink-100'}`} />
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="py-5 px-4">
+                                <p className="text-xs text-rose-900/80 line-clamp-2 max-w-xs">{r.comment || <em className="opacity-40 italic">No comment</em>}</p>
+                              </td>
+                              <td className="py-5 px-4 text-xs font-semibold text-rose-950/40">
+                                {new Date(r.createdAt).toLocaleDateString()}
+                              </td>
+                              <td className="py-5 px-4 text-right">
+                                <button
+                                  onClick={() => handleDeleteReview(r.id)}
+                                  className="p-2.5 rounded-xl bg-pink-50/50 text-rose-950 hover:bg-red-600 hover:text-white transition-all cursor-pointer"
+                                  title="Delete Review"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pagination page={reviewPage} totalPages={reviewTotalPages} onPage={setReviewPage} />
                 </div>
               )}
 
