@@ -247,6 +247,25 @@ const deleteReview = async (req, res) => {
   }
 };
 
+// GET /api/reviews — Admin only
+// Get all reviews in the system
+const getAllReviews = async (req, res) => {
+  try {
+    const reviews = await prisma.review.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, name: true, email: true, profileImage: true } },
+        product: { select: { id: true, name: true } },
+      },
+    });
+
+    res.json({ reviews });
+  } catch (error) {
+    console.error('Get all reviews error:', error);
+    res.status(500).json({ error: 'Could not fetch reviews.' });
+  }
+};
+
 module.exports = {
   getProductReviews,
   getAllReviews,

@@ -406,4 +406,6 @@ module.exports = {
   updateProfileAvatar,
   removeProfileAvatar,
   changePassword,
+  updateCustomerStatus,
+  deleteCustomer,
 };

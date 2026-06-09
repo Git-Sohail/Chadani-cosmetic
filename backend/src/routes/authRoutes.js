@@ -11,6 +11,8 @@ const {
   updateProfileAvatar,
   removeProfileAvatar,
   changePassword,
+  updateCustomerStatus,
+  deleteCustomer,
 } = require('../controllers/authController');
 const { startGoogleAuth, googleCallback } = require('../controllers/googleAuthController');
 const { authenticateUser, isAdmin } = require('../middleware/auth');
