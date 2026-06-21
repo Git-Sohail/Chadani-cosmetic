@@ -34,7 +34,7 @@ export default function RootLayout({ children }) {
       data-scroll-behavior="smooth"
       className={`${playfair.variable} ${plusJakarta.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-pink-50/10">
+      <body className="min-h-full flex flex-col font-sans bg-[#fff5f7]">
         <AuthProvider>
           <ChatProvider>
             <NotificationProvider>

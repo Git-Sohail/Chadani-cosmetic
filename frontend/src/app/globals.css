@@ -1,21 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fdf2f8; /* pink-50 */
-  --foreground: #4c0519; /* rose-950 */
+  --background: #fff5f7;
+  --foreground: #2a2a2a;
   --nav-height-mobile: 68px;
   --nav-height-desktop: 88px;
+  --luxury-burgundy: #7a003c;
+  --luxury-wine: #5a002c;
+  --luxury-rose-gold: #c89b8f;
+  --luxury-pink: #fff5f7;
+  --luxury-grey: #f8f8f8;
+  --luxury-text: #2a2a2a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-luxury-burgundy: var(--luxury-burgundy);
+  --color-luxury-wine: var(--luxury-wine);
+  --color-luxury-rose-gold: var(--luxury-rose-gold);
+  --color-luxury-pink: var(--luxury-pink);
+  --color-luxury-grey: var(--luxury-grey);
+  --color-luxury-text: var(--luxury-text);
   --font-sans: var(--font-sans), sans-serif;
   --font-serif: var(--font-serif), serif;
-  
-  /* Custom Animations */
   --animate-spin-slow: spin 20s linear infinite;
   --animate-fadeIn: fadeIn 0.4s ease-out forwards;
+  --animate-float: float 6s ease-in-out infinite;
 }
 
 @keyframes fadeIn {
@@ -29,26 +40,56 @@
   }
 }
 
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
+  overflow-x: hidden;
 }
 
-/* Custom scrollbar styling for premium look */
+.glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 32px rgba(122, 0, 60, 0.06);
+}
+
+.glass-nav {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(200, 155, 143, 0.15);
+  box-shadow: 0 4px 24px rgba(122, 0, 60, 0.06);
+}
+
+.luxury-gradient-bg {
+  background: linear-gradient(135deg, #fff5f7 0%, #ffffff 45%, #fff0f4 100%);
+}
+
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #fdf2f8;
+  background: #fff5f7;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #f43f5e;
+  background: #c89b8f;
   border-radius: 9999px;
-  border: 2px solid #fdf2f8;
+  border: 2px solid #fff5f7;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #be123c;
+  background: #7a003c;
 }

@@ -29,7 +29,7 @@ export default function CustomerLayout({ children }) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-pink-50/20 selection:bg-rose-200 selection:text-rose-900 font-sans antialiased text-rose-950">
+    <div className="flex flex-col min-h-screen bg-[#fff5f7] selection:bg-[#c89b8f]/30 selection:text-[#7a003c] font-sans antialiased text-[#2a2a2a]">
       <Navbar />
       <main className="flex-grow pt-[var(--nav-height-mobile)] lg:pt-[var(--nav-height-desktop)] pb-12">{children}</main>
       <Footer />
