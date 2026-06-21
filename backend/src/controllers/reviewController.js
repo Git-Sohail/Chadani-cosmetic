@@ -247,6 +247,36 @@ const deleteReview = async (req, res) => {
   }
 };
 
+// GET /api/reviews/latest — Public
+// Get latest reviews with product info for homepage carousel
+const getLatestReviews = async (req, res) => {
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { comment: { not: null } }, // only reviews with comments
+      orderBy: { createdAt: 'desc' },
+      take: 12,
+      include: {
+        user: { select: { id: true, name: true, profileImage: true } },
+        product: { select: { id: true, name: true, image: true } },
+      },
+    });
+
+    res.json({
+      reviews: reviews.map((r) => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: r.createdAt,
+        user: r.user,
+        product: r.product,
+      })),
+    });
+  } catch (error) {
+    console.error('Get latest reviews error:', error);
+    res.status(500).json({ error: 'Could not fetch reviews.' });
+  }
+};
+
 // GET /api/reviews — Admin only
 // Get all reviews in the system
 const getAllReviews = async (req, res) => {
@@ -268,6 +298,7 @@ const getAllReviews = async (req, res) => {
 
 module.exports = {
   getProductReviews,
+  getLatestReviews,
   getAllReviews,
   canReview,
   createReview,

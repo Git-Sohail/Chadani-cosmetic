@@ -1,6 +1,7 @@
 const express = require('express');
 const {
   getProductReviews,
+  getLatestReviews,
   getAllReviews,
   canReview,
   createReview,
@@ -12,6 +13,7 @@ const { authenticateUser, isAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // Public
+router.get('/latest', getLatestReviews);
 router.get('/product/:productId', getProductReviews);
 
 // Admin
