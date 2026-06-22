@@ -1166,12 +1166,12 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-rose-950/40 uppercase tracking-[0.2em] ml-1.5">Original Price (USD)</label>
+                <label className="text-[9px] font-black text-rose-950/40 uppercase tracking-[0.2em] ml-1.5">Original Price (NPR)</label>
                 <input type="number" step="0.01" value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} className="w-full px-5 py-3.5 bg-pink-50/20 border border-pink-100 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-rose-300 focus:outline-none" required />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-rose-950/40 uppercase tracking-[0.2em] ml-1.5">Discounted Price (USD) (Optional)</label>
+                <label className="text-[9px] font-black text-rose-950/40 uppercase tracking-[0.2em] ml-1.5">Discounted Price (NPR) (Optional)</label>
                 <input type="number" step="0.01" value={productForm.discountPrice} onChange={(e) => setProductForm({ ...productForm, discountPrice: e.target.value })} className="w-full px-5 py-3.5 bg-pink-50/20 border border-pink-100 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-rose-300 focus:outline-none" />
               </div>
 
