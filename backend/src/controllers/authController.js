@@ -13,6 +13,35 @@ const { upload, storeImage } = require('../utils/imageStorage');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'cosmetics_and_bangles_secret_key_123456';
 
+/** Map Prisma/DB errors to clear API responses for admin customer actions */
+function respondCustomerActionError(res, error, action) {
+  console.error(`[customer ${action}]`, {
+    code: error.code,
+    message: error.message,
+    meta: error.meta,
+  });
+
+  if (error.code === 'P2025') {
+    return res.status(404).json({ error: 'Customer not found.' });
+  }
+
+  const msg = error.message || '';
+  if (msg.includes('isActive') || msg.includes('deletedAt') || msg.includes('column')) {
+    return res.status(500).json({
+      error:
+        'Customer soft-delete is not configured in the database. Run: npx prisma migrate deploy',
+    });
+  }
+
+  return res.status(500).json({
+    error: `Could not ${action} customer. Please try again or contact support.`,
+  });
+}
+
+async function loadCustomerTarget(id) {
+  return prisma.user.findUnique({ where: { id } });
+}
+
 const register = async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
@@ -140,6 +169,10 @@ const resendOtp = async (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
 
+    if (user.isActive === false) {
+      return res.status(403).json({ error: 'Your account has been deactivated. Please contact support.' });
+    }
+
     if (user.isVerified) {
       return res.status(400).json({ error: 'Email is already verified.' });
     }
@@ -239,61 +272,86 @@ const getAllCustomers = async (req, res) => {
     res.json(customers);
   } catch (error) {
     console.error('Get all customers error:', error);
+    const msg = error.message || '';
+    if (msg.includes('isActive') || msg.includes('deletedAt')) {
+      return res.status(500).json({
+        error: 'Customer list unavailable: database migration required (isActive/deletedAt).',
+      });
+    }
     res.status(500).json({ error: 'Server error fetching customers.' });
   }
 };
 
-// Soft delete — deactivate customer (keeps all order history)
+// Soft delete — deactivate customer (keeps all order history, reviews, orders)
 const deactivateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Prevent admin from deactivating themselves
     if (id === req.user.id) {
-      return res.status(400).json({ error: 'You cannot deactivate your own account.' });
+      return res.status(400).json({ error: 'You cannot remove your own admin account.' });
     }
 
-    const target = await prisma.user.findUnique({ where: { id } });
-    if (!target) return res.status(404).json({ error: 'Customer not found.' });
-    if (target.role === 'admin') {
-      return res.status(403).json({ error: 'Cannot deactivate an administrator.' });
+    const target = await loadCustomerTarget(id);
+    if (!target) {
+      return res.status(404).json({ error: 'Customer not found.' });
     }
-    if (!target.isActive) {
+    if (target.role === 'admin') {
+      return res.status(403).json({ error: 'Administrator accounts cannot be removed.' });
+    }
+    if (target.isActive === false) {
       return res.status(400).json({ error: 'Customer is already deactivated.' });
     }
 
-    await prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id },
       data: { isActive: false, deletedAt: new Date() },
+      select: { id: true, name: true, email: true, isActive: true, deletedAt: true },
     });
 
-    res.json({ message: 'Customer deactivated successfully. Their order history is preserved.' });
+    console.info(`[customer deactivate] admin=${req.user.id} customer=${id}`);
+
+    res.json({
+      message: 'Customer removed successfully. Order and sales history has been preserved.',
+      customer: updated,
+    });
   } catch (error) {
-    console.error('Deactivate customer error:', error);
-    res.status(500).json({ error: 'Server error deactivating customer.' });
+    return respondCustomerActionError(res, error, 'deactivate');
   }
 };
 
-// Reactivate customer
+// Alias — frontend may call DELETE for soft delete (not hard delete)
+const deleteCustomer = deactivateCustomer;
+
+// Restore previously deactivated customer
 const activateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const target = await prisma.user.findUnique({ where: { id } });
-    if (!target) return res.status(404).json({ error: 'Customer not found.' });
-    if (target.isActive) {
+    const target = await loadCustomerTarget(id);
+    if (!target) {
+      return res.status(404).json({ error: 'Customer not found.' });
+    }
+    if (target.role === 'admin') {
+      return res.status(403).json({ error: 'Administrator accounts do not use customer restore.' });
+    }
+    if (target.isActive !== false) {
       return res.status(400).json({ error: 'Customer is already active.' });
     }
 
-    await prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id },
       data: { isActive: true, deletedAt: null },
+      select: { id: true, name: true, email: true, isActive: true, deletedAt: true },
     });
 
-    res.json({ message: 'Customer reactivated successfully.' });
+    console.info(`[customer restore] admin=${req.user.id} customer=${id}`);
+
+    res.json({
+      message: 'Customer restored successfully. They can sign in again.',
+      customer: updated,
+    });
   } catch (error) {
-    console.error('Activate customer error:', error);
-    res.status(500).json({ error: 'Server error activating customer.' });
+    return respondCustomerActionError(res, error, 'restore');
   }
 };
 
@@ -325,6 +383,12 @@ const getMe = async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
+    }
+    if (user.role !== 'admin' && user.isActive === false) {
+      return res.status(403).json({
+        error: 'Your account has been deactivated. Please contact support.',
+        deactivated: true,
+      });
     }
     res.json({ user: formatUserForClient(user) });
   } catch (error) {
@@ -450,5 +514,6 @@ module.exports = {
   changePassword,
   updateCustomerStatus,
   deactivateCustomer,
+  deleteCustomer,
   activateCustomer,
 };

@@ -39,12 +39,20 @@ const authenticateUser = async (req, res, next) => {
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, name: true, email: true, role: true },
+      select: { id: true, name: true, email: true, role: true, isActive: true },
     });
 
     if (!user) {
       console.warn(`[auth] User not found for id=${decoded.userId} — ${req.method} ${req.path}`);
       return res.status(401).json({ error: 'User not found or deleted.' });
+    }
+
+    if (user.role !== 'admin' && user.isActive === false) {
+      console.warn(`[auth] Deactivated account — userId=${user.id} — ${req.method} ${req.path}`);
+      return res.status(403).json({
+        error: 'Your account has been deactivated. Please contact support.',
+        deactivated: true,
+      });
     }
 
     req.user = user;

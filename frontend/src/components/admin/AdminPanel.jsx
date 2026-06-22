@@ -209,6 +209,8 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
     }
     if (customerVerified === 'verified') list = list.filter((c) => c.isVerified);
     if (customerVerified === 'unverified') list = list.filter((c) => !c.isVerified);
+    if (customerVerified === 'active') list = list.filter((c) => c.isActive !== false);
+    if (customerVerified === 'deactivated') list = list.filter((c) => c.isActive === false);
     return list;
   }, [customers, customerSearch, customerVerified]);
 
@@ -456,16 +458,42 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
     }
   };
 
-  const handleDeleteCustomer = async (customerId) => {
-    if (!confirm('Are you sure you want to permanently delete this customer account? This cannot be undone.')) return;
+  const handleRemoveCustomer = async (customerId, customerName) => {
+    if (customerId === user?.id) {
+      showToast('You cannot remove your own admin account.', 'error');
+      return;
+    }
+    if (!confirm(`Remove "${customerName}"?\n\nThis deactivates their account. Order history and sales data will be kept.`)) return;
     try {
-      await axios.delete(`${API_URL}/auth/customers/${customerId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await axios.patch(`${API_URL}/auth/customers/${customerId}/deactivate`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      showToast('Customer account deleted.');
+      showToast(res.data?.message || 'Customer removed successfully.', 'success');
       fetchData();
     } catch (error) {
-      showToast(error.response?.data?.error || 'Failed to delete customer.', 'error');
+      const msg =
+        error.response?.data?.error ||
+        (error.response?.status === 404
+          ? 'Customer not found.'
+          : error.response?.status === 403
+            ? 'You are not allowed to remove this account.'
+            : 'Could not remove customer. Please try again.');
+      showToast(msg, 'error');
+    }
+  };
+
+  const handleRestoreCustomer = async (customerId, customerName) => {
+    try {
+      const res = await axios.patch(`${API_URL}/auth/customers/${customerId}/restore`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      showToast(res.data?.message || `Customer "${customerName}" restored.`, 'success');
+      fetchData();
+    } catch (error) {
+      showToast(
+        error.response?.data?.error || 'Could not restore customer. Please try again.',
+        'error'
+      );
     }
   };
 
@@ -515,32 +543,6 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
   };
 
   // Settings save handler
-  // ── Customer deactivate / activate ────────────────────────────────────────
-  const handleDeactivateCustomer = async (customerId, customerName) => {
-    if (!confirm(`Deactivate "${customerName}"?\n\nTheir order history will be preserved. They will not be able to log in.`)) return;
-    try {
-      await axios.patch(`${API_URL}/auth/customers/${customerId}/deactivate`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      showToast('Customer deactivated successfully.', 'success');
-      fetchData();
-    } catch (error) {
-      showToast(error.response?.data?.error || 'Failed to deactivate customer.', 'error');
-    }
-  };
-
-  const handleActivateCustomer = async (customerId) => {
-    try {
-      await axios.patch(`${API_URL}/auth/customers/${customerId}/activate`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      showToast('Customer reactivated successfully.', 'success');
-      fetchData();
-    } catch (error) {
-      showToast(error.response?.data?.error || 'Failed to activate customer.', 'error');
-    }
-  };
-
   const handleSettingsSubmit = (e) => {
     e.preventDefault();
     showToast('Boutique configurations updated successfully!');
@@ -947,6 +949,8 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                       options: [
                         { label: 'Verified', value: 'verified' },
                         { label: 'Unverified', value: 'unverified' },
+                        { label: 'Active', value: 'active' },
+                        { label: 'Deactivated', value: 'deactivated' },
                       ],
                     }]}
                     filterValues={{ verified: customerVerified }}
@@ -970,7 +974,7 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                         {loading && pagedCustomers.length === 0
                           ? <SkeletonTableRows rows={5} cols={6} />
                           : pagedCustomers.length === 0
-                          ? <tr><td colSpan={6} className="py-16 text-center text-xs font-black text-rose-900/40 uppercase tracking-widest">No customers found</td></tr>
+                          ? <tr><td colSpan={7} className="py-16 text-center text-xs font-black text-rose-900/40 uppercase tracking-widest">No customers found</td></tr>
                           : pagedCustomers.map((c) => {
                             // Count this customer's orders from loaded orders list
                             const customerOrders = orders.filter((o) => o.userId === c.id);
@@ -1016,22 +1020,32 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                                     </button>
                                   )}
                                 </td>
+                                <td className="py-5 px-4 text-xs font-bold text-rose-950/50">
+                                  {c.createdAt
+                                    ? new Date(c.createdAt).toLocaleDateString(undefined, {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                      })
+                                    : '—'}
+                                </td>
                                 <td className="py-5 px-4 text-right">
                                   {c.isActive === false ? (
                                     <button
                                       type="button"
-                                      onClick={() => handleActivateCustomer(c.id)}
+                                      onClick={() => handleRestoreCustomer(c.id, c.name)}
                                       className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-black uppercase tracking-wider hover:bg-emerald-100 transition-colors"
                                     >
-                                      Reactivate
+                                      Restore Customer
                                     </button>
                                   ) : (
                                     <button
                                       type="button"
-                                      onClick={() => handleDeactivateCustomer(c.id, c.name)}
-                                      className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[9px] font-black uppercase tracking-wider hover:bg-amber-100 transition-colors"
+                                      onClick={() => handleRemoveCustomer(c.id, c.name)}
+                                      disabled={c.id === user?.id}
+                                      className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[9px] font-black uppercase tracking-wider hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
-                                      Deactivate
+                                      Remove
                                     </button>
                                   )}
                                 </td>
