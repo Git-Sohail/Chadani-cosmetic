@@ -1,29 +1,24 @@
 /**
- * Nepali Rupee (NPR) display — prices in API/DB use base units, shown as NPR in the storefront.
+ * Chadani Cosmetic — Currency Utility
+ * Prices in DB are stored in Nepalese Rupees (NPR).
+ * Display format: Rs. 1,250
  */
 
 export const CURRENCY_SYMBOL = 'Rs.';
-export const NPR_CONVERSION_RATE =
-  typeof process !== 'undefined' && process.env.NEXT_PUBLIC_NPR_RATE
-    ? parseFloat(process.env.NEXT_PUBLIC_NPR_RATE)
-    : 133;
+export const CURRENCY_CODE = 'NPR';
 
-export function toNprAmount(price) {
-  if (price == null || Number.isNaN(Number(price))) return null;
-  return Number(price) * NPR_CONVERSION_RATE;
-}
-
+/**
+ * Format a price in NPR.
+ * formatPrice(1250)   → "Rs. 1,250"
+ * formatPrice(1250.5) → "Rs. 1,251" (rounded)
+ * formatPrice(null)   → "N/A"
+ */
 export function formatPrice(price) {
-  const npr = toNprAmount(price);
-  if (npr == null) return 'N/A';
-  return `${CURRENCY_SYMBOL} ${npr.toLocaleString('en-NP', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })}`;
+  if (price == null || Number.isNaN(Number(price))) return 'N/A';
+  const amount = Math.round(Number(price));
+  return `${CURRENCY_SYMBOL} ${amount.toLocaleString('en-NP')}`;
 }
 
-export const currencyConfig = {
-  symbol: CURRENCY_SYMBOL,
-  code: 'NPR',
-  rate: NPR_CONVERSION_RATE,
-};
+/** Alias kept for backward compatibility */
+export const formatNpr = formatPrice;
+export const toNprAmount = (p) => Number(p);

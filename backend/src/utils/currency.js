@@ -1,19 +1,20 @@
-/** Prices in DB are stored in base units; display in Nepali Rupees (NPR). */
+/**
+ * Chadani Cosmetic — Currency Utility (Backend)
+ * Prices in DB are stored in Nepalese Rupees (NPR).
+ * Display format: Rs. 1,250
+ */
+
 const NPR_SYMBOL = 'Rs.';
-const NPR_RATE = parseFloat(process.env.NPR_CONVERSION_RATE || '133');
 
-function toNprAmount(amount) {
-  if (amount == null || Number.isNaN(Number(amount))) return null;
-  return Number(amount) * NPR_RATE;
-}
-
+/**
+ * Format a price in NPR for use in emails and server responses.
+ * formatNpr(1250)   → "Rs. 1,250"
+ * formatNpr(null)   → "N/A"
+ */
 function formatNpr(amount) {
-  const npr = toNprAmount(amount);
-  if (npr == null) return 'N/A';
-  return `${NPR_SYMBOL} ${npr.toLocaleString('en-NP', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })}`;
+  if (amount == null || Number.isNaN(Number(amount))) return 'N/A';
+  const rounded = Math.round(Number(amount));
+  return `${NPR_SYMBOL} ${rounded.toLocaleString('en-NP')}`;
 }
 
-module.exports = { NPR_SYMBOL, NPR_RATE, toNprAmount, formatNpr };
+module.exports = { NPR_SYMBOL, formatNpr };
