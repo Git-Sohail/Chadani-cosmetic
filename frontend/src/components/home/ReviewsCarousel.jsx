@@ -119,19 +119,17 @@ export default function ReviewsCarousel() {
   const next = () => setPage((p) => (p === totalPages - 1 ? 0 : p + 1));
 
   return (
-    <section id="reviews" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#fff5f7] to-white overflow-hidden">
+    <section id="reviews" className="section-padding bg-luxury-pink/40 overflow-hidden">
       <div className="max-w-7xl mx-auto">
-
-        {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-[#7A003C]/8 text-[#7A003C] text-[10px] font-black uppercase tracking-[0.25em] mb-4 border border-[#7A003C]/15">
+        <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
+          <span className="inline-block px-3 py-1 rounded-full bg-luxury-burgundy/8 text-luxury-burgundy text-[10px] font-medium uppercase tracking-[0.2em] mb-3 border border-luxury-burgundy/10">
             Customer Testimonials
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-rose-950 font-black mt-2">
+          <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-luxury-text font-medium mt-1">
             What Our Customers Say
           </h2>
-          <p className="text-sm text-rose-900/50 font-medium mt-3 leading-relaxed">
-            Real reviews from verified purchases — no fake testimonials.
+          <p className="text-sm text-luxury-text/50 font-light mt-2">
+            Real reviews from verified purchases.
           </p>
         </div>
 

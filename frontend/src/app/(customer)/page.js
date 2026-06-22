@@ -48,13 +48,13 @@ export default function Home() {
   }, [fetchData]);
 
   return (
-    <div className="overflow-x-hidden bg-[#fff5f7]">
+    <div className="overflow-x-hidden bg-luxury-pink">
       <LuxuryHero />
       <FeatureBar />
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-32 text-[#7a003c]/50 gap-4">
-          <Loader2 className="w-10 h-10 animate-spin text-[#7a003c]" />
+        <div className="flex flex-col items-center justify-center py-20 text-luxury-burgundy/50 gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-luxury-burgundy" />
           <p className="text-xs font-medium uppercase tracking-[0.25em]">Loading Collection</p>
         </div>
       ) : (

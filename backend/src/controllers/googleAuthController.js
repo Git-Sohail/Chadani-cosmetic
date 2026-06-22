@@ -81,11 +81,16 @@ async function findOrCreateFromGoogle(profile) {
   });
 
   if (user) {
+    // Block deactivated accounts from signing in via Google
+    if (user.isActive === false) {
+      const err = new Error('Your account has been deactivated. Please contact support.');
+      err.code = 'ACCOUNT_DEACTIVATED';
+      throw err;
+    }
     return prisma.user.update({
       where: { id: user.id },
       data: {
         googleId: user.googleId || googleId,
-        // Only use Google's picture if user has no custom uploaded photo
         profileImage: user.profileImage || profileImage || null,
         isVerified: true,
         name: user.name || name,
@@ -166,6 +171,9 @@ const googleCallback = async (req, res) => {
     console.error('Google OAuth callback error:', err);
     if (err.code === 'ADMIN_RESERVED') {
       return redirectWithError(res, 'admin_reserved', err.message);
+    }
+    if (err.code === 'ACCOUNT_DEACTIVATED') {
+      return redirectWithError(res, 'account_deactivated', err.message);
     }
     redirectWithError(res, 'server_error', 'Could not complete Google sign-in.');
   }

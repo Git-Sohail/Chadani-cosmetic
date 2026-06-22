@@ -5,40 +5,33 @@ import { Leaf, Heart, Stethoscope, Gift, Globe } from 'lucide-react';
 import ScrollReveal from './ScrollReveal';
 
 const ITEMS = [
-  { icon: Leaf, title: 'Natural Ingredients', desc: 'Pure botanical formulas crafted with care.' },
-  { icon: Heart, title: 'Cruelty Free', desc: 'Never tested on animals. Ever.' },
-  { icon: Stethoscope, title: 'Dermatologist Approved', desc: 'Clinically tested for all skin types.' },
-  { icon: Gift, title: 'Premium Packaging', desc: 'Unboxing experiences worth remembering.' },
-  { icon: Globe, title: 'Worldwide Shipping', desc: 'Delivered to your doorstep with love.' },
+  { icon: Leaf, title: 'Natural Ingredients', desc: 'Pure botanical formulas.' },
+  { icon: Heart, title: 'Cruelty Free', desc: 'Never tested on animals.' },
+  { icon: Stethoscope, title: 'Dermatologist Approved', desc: 'Clinically tested.' },
+  { icon: Gift, title: 'Premium Packaging', desc: 'Luxury unboxing.' },
+  { icon: Globe, title: 'Worldwide Shipping', desc: 'Delivered with care.' },
 ];
 
 export default function WhyChooseUs() {
   return (
-    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-white">
+    <section className="section-padding bg-white">
       <div className="max-w-7xl mx-auto">
-        <ScrollReveal className="text-center max-w-2xl mx-auto mb-14 sm:mb-20">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#c89b8f]">The Chadani Promise</span>
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#2a2a2a] mt-3 font-medium">Why Choose Us</h2>
+        <ScrollReveal className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
+          <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-luxury-rose-gold">The Chadani Promise</span>
+          <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-luxury-text mt-2 font-medium">Why Choose Us</h2>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {ITEMS.map((item, i) => {
             const Icon = item.icon;
             return (
-              <ScrollReveal key={item.title} delay={i * 0.07}>
-                <motion.div
-                  className="glass-card rounded-3xl p-6 sm:p-8 text-center h-full hover:shadow-lg transition-shadow duration-500"
-                  whileHover={{ y: -4 }}
-                >
-                  <motion.div
-                    className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-[#fff5f7] flex items-center justify-center"
-                    whileHover={{ rotate: [0, -8, 8, 0] }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <Icon className="w-6 h-6 text-[#7a003c]" strokeWidth={1.5} />
-                  </motion.div>
-                  <h3 className="font-serif text-lg text-[#2a2a2a] mb-2">{item.title}</h3>
-                  <p className="text-xs text-[#2a2a2a]/50 font-light leading-relaxed">{item.desc}</p>
+              <ScrollReveal key={item.title} delay={i * 0.05}>
+                <motion.div className="glass-card rounded-2xl p-4 sm:p-5 text-center h-full hover:shadow-md transition-shadow" whileHover={{ y: -3 }}>
+                  <div className="w-11 h-11 mx-auto mb-3 rounded-xl bg-luxury-pink flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-luxury-burgundy" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="font-serif text-sm sm:text-base text-luxury-text mb-1">{item.title}</h3>
+                  <p className="text-[10px] sm:text-xs text-luxury-text/50 font-light">{item.desc}</p>
                 </motion.div>
               </ScrollReveal>
             );

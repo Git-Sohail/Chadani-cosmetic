@@ -1,4 +1,4 @@
-import { Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
+import { Cormorant_Garamond, Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import { CartProvider } from "../context/CartContext";
@@ -8,14 +8,16 @@ import { ChatProvider } from "../context/ChatContext";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { ToastProvider } from "../components/Toast";
 
-const playfair = Playfair_Display({
-  variable: "--font-serif",
+const cormorant = Cormorant_Garamond({
+  variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-sans",
+const poppins = Poppins({
+  variable: "--font-body",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
 });
 
 export const metadata = {
@@ -32,9 +34,9 @@ export default function RootLayout({ children }) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${playfair.variable} ${plusJakarta.variable} h-full antialiased`}
+      className={`${cormorant.variable} ${poppins.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-[#fff5f7]">
+      <body className="min-h-full flex flex-col font-sans bg-luxury-pink text-luxury-text">
         <AuthProvider>
           <ChatProvider>
             <NotificationProvider>

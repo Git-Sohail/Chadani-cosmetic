@@ -515,6 +515,32 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
   };
 
   // Settings save handler
+  // ── Customer deactivate / activate ────────────────────────────────────────
+  const handleDeactivateCustomer = async (customerId, customerName) => {
+    if (!confirm(`Deactivate "${customerName}"?\n\nTheir order history will be preserved. They will not be able to log in.`)) return;
+    try {
+      await axios.patch(`${API_URL}/auth/customers/${customerId}/deactivate`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      showToast('Customer deactivated successfully.', 'success');
+      fetchData();
+    } catch (error) {
+      showToast(error.response?.data?.error || 'Failed to deactivate customer.', 'error');
+    }
+  };
+
+  const handleActivateCustomer = async (customerId) => {
+    try {
+      await axios.patch(`${API_URL}/auth/customers/${customerId}/activate`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      showToast('Customer reactivated successfully.', 'success');
+      fetchData();
+    } catch (error) {
+      showToast(error.response?.data?.error || 'Failed to activate customer.', 'error');
+    }
+  };
+
   const handleSettingsSubmit = (e) => {
     e.preventDefault();
     showToast('Boutique configurations updated successfully!');
@@ -937,6 +963,7 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                           <th scope="col" className="py-4 px-4">Orders</th>
                           <th scope="col" className="py-4 px-4">Status</th>
                           <th scope="col" className="py-4 px-4">Joined</th>
+                          <th scope="col" className="py-4 px-4 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-pink-50/30">
@@ -972,24 +999,41 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                                   </div>
                                 </td>
                                 <td className="py-5 px-4">
-                                  <button
-                                    onClick={() => handleToggleCustomerVerify(c.id, c.isVerified)}
-                                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
-                                      c.isVerified ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100' : 'bg-red-50 text-red-600 border border-red-100 hover:bg-red-100'
-                                    }`}
-                                  >
-                                    <span className={`w-1.5 h-1.5 rounded-full ${c.isVerified ? 'bg-emerald-600' : 'bg-red-500'}`} aria-hidden />
-                                    {c.isVerified ? 'Verified' : 'Unverified'}
-                                  </button>
+                                  {c.isActive === false ? (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-gray-100 text-gray-500 border border-gray-200">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-gray-400" aria-hidden /> Deactivated
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleCustomerVerify(c.id, c.isVerified)}
+                                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
+                                        c.isVerified ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100' : 'bg-red-50 text-red-600 border border-red-100 hover:bg-red-100'
+                                      }`}
+                                    >
+                                      <span className={`w-1.5 h-1.5 rounded-full ${c.isVerified ? 'bg-emerald-600' : 'bg-red-500'}`} aria-hidden />
+                                      {c.isVerified ? 'Verified' : 'Unverified'}
+                                    </button>
+                                  )}
                                 </td>
                                 <td className="py-5 px-4 text-right">
-                                  <button
-                                    onClick={() => handleDeleteCustomer(c.id)}
-                                    className="p-2 rounded-xl bg-pink-50/50 text-rose-950 hover:bg-red-600 hover:text-white transition-all cursor-pointer"
-                                    title="Delete Customer"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                  {c.isActive === false ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleActivateCustomer(c.id)}
+                                      className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-black uppercase tracking-wider hover:bg-emerald-100 transition-colors"
+                                    >
+                                      Reactivate
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeactivateCustomer(c.id, c.name)}
+                                      className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[9px] font-black uppercase tracking-wider hover:bg-amber-100 transition-colors"
+                                    >
+                                      Deactivate
+                                    </button>
+                                  )}
                                 </td>
                               </tr>
                             );

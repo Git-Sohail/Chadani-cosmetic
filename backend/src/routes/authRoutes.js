@@ -12,7 +12,8 @@ const {
   removeProfileAvatar,
   changePassword,
   updateCustomerStatus,
-  deleteCustomer,
+  deactivateCustomer,
+  activateCustomer,
 } = require('../controllers/authController');
 const { startGoogleAuth, googleCallback } = require('../controllers/googleAuthController');
 const { authenticateUser, isAdmin } = require('../middleware/auth');
@@ -35,6 +36,7 @@ router.put('/profile/password', authenticateUser, changePassword);
 router.get('/users/count', authenticateUser, isAdmin, getUserCount);
 router.get('/customers', authenticateUser, isAdmin, getAllCustomers);
 router.put('/customers/:id/status', authenticateUser, isAdmin, updateCustomerStatus);
-router.delete('/customers/:id', authenticateUser, isAdmin, deleteCustomer);
+router.patch('/customers/:id/deactivate', authenticateUser, isAdmin, deactivateCustomer);
+router.patch('/customers/:id/activate', authenticateUser, isAdmin, activateCustomer);
 
 module.exports = router;

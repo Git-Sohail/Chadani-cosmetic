@@ -177,12 +177,16 @@ const login = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Block deactivated accounts
+    if (user.isActive === false) {
+      return res.status(403).json({ error: 'Your account has been deactivated. Please contact support.' });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid password' });
     }
 
-    // Customers must verify email; admin account (seeded) signs in without OTP
     if (user.role !== 'admin' && !user.isVerified) {
       return res.status(403).json({
         error: 'Email not verified. Please verify your email before signing in.',
@@ -225,7 +229,10 @@ const getAllCustomers = async (req, res) => {
         email: true,
         phone: true,
         isVerified: true,
+        isActive: true,
+        deletedAt: true,
         createdAt: true,
+        _count: { select: { orders: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -236,22 +243,57 @@ const getAllCustomers = async (req, res) => {
   }
 };
 
-const deleteCustomer = async (req, res) => {
+// Soft delete — deactivate customer (keeps all order history)
+const deactivateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Check if user is an admin - we should not allow deleting other admins via this route
-    const targetUser = await prisma.user.findUnique({ where: { id } });
-    if (!targetUser) return res.status(404).json({ error: 'Customer not found.' });
-    if (targetUser.role === 'admin') {
-      return res.status(403).json({ error: 'Cannot delete an administrator.' });
+
+    // Prevent admin from deactivating themselves
+    if (id === req.user.id) {
+      return res.status(400).json({ error: 'You cannot deactivate your own account.' });
     }
 
-    await prisma.user.delete({ where: { id } });
-    res.json({ message: 'Customer account deleted successfully.' });
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) return res.status(404).json({ error: 'Customer not found.' });
+    if (target.role === 'admin') {
+      return res.status(403).json({ error: 'Cannot deactivate an administrator.' });
+    }
+    if (!target.isActive) {
+      return res.status(400).json({ error: 'Customer is already deactivated.' });
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: { isActive: false, deletedAt: new Date() },
+    });
+
+    res.json({ message: 'Customer deactivated successfully. Their order history is preserved.' });
   } catch (error) {
-    console.error('Delete customer error:', error);
-    res.status(500).json({ error: 'Server error deleting customer.' });
+    console.error('Deactivate customer error:', error);
+    res.status(500).json({ error: 'Server error deactivating customer.' });
+  }
+};
+
+// Reactivate customer
+const activateCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) return res.status(404).json({ error: 'Customer not found.' });
+    if (target.isActive) {
+      return res.status(400).json({ error: 'Customer is already active.' });
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: { isActive: true, deletedAt: null },
+    });
+
+    res.json({ message: 'Customer reactivated successfully.' });
+  } catch (error) {
+    console.error('Activate customer error:', error);
+    res.status(500).json({ error: 'Server error activating customer.' });
   }
 };
 
@@ -407,5 +449,6 @@ module.exports = {
   removeProfileAvatar,
   changePassword,
   updateCustomerStatus,
-  deleteCustomer,
+  deactivateCustomer,
+  activateCustomer,
 };

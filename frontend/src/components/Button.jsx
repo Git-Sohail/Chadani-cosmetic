@@ -6,21 +6,22 @@ export default function Button({
   children,
   onClick,
   type = 'button',
-  variant = 'primary', // 'primary' | 'secondary' | 'outline' | 'text'
-  size = 'md', // 'sm' | 'md' | 'lg'
+  variant = 'primary',
+  size = 'md',
   className = '',
   disabled = false,
   loading = false,
   fullWidth = false,
   ...props
 }) {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100';
+  const baseStyles =
+    'inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-luxury-rose-gold/50 focus:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100';
 
   const variants = {
-    primary: 'bg-rose-900 hover:bg-rose-950 text-white shadow-sm hover:shadow-md border border-rose-900',
-    secondary: 'bg-pink-100 hover:bg-pink-200 text-rose-900 border border-pink-100',
-    outline: 'bg-transparent hover:bg-pink-50 text-rose-900 border border-rose-900',
-    text: 'bg-transparent hover:bg-pink-50 text-rose-900',
+    primary: 'bg-luxury-burgundy hover:bg-luxury-burgundy-dark text-white shadow-sm hover:shadow-md border border-luxury-burgundy',
+    secondary: 'bg-luxury-pink hover:bg-luxury-rose-gold/20 text-luxury-burgundy border border-luxury-pink',
+    outline: 'bg-transparent hover:bg-luxury-pink text-luxury-burgundy border border-luxury-burgundy/40',
+    text: 'bg-transparent hover:bg-luxury-pink text-luxury-burgundy',
   };
 
   const sizes = {
@@ -29,14 +30,12 @@ export default function Button({
     lg: 'px-7 py-3 text-base',
   };
 
-  const widthStyle = fullWidth ? 'w-full' : '';
-
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyle} ${className}`}
+      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
       {...props}
     >
       {loading ? (
@@ -47,7 +46,9 @@ export default function Button({
           </svg>
           Loading...
         </>
-      ) : children}
+      ) : (
+        children
+      )}
     </button>
   );
 }

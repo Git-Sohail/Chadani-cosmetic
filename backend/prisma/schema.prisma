@@ -8,16 +8,18 @@ generator client {
 }
 
 model User {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   name         String
-  email        String   @unique
+  email        String    @unique
   password     String
   phone        String?
-  googleId     String?  @unique
+  googleId     String?   @unique
   profileImage String?
-  role         String   @default("customer") // "customer" | "admin"
-  isVerified   Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  role         String    @default("customer")
+  isVerified   Boolean   @default(false)
+  isActive     Boolean   @default(true)
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
 
   cartItems     CartItem[]
   wishlists     Wishlist[]

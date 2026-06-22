@@ -69,15 +69,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-full gap-3 lg:gap-6">
             <div className="flex shrink-0 items-center min-w-0">
-              <Logo
-                size="lg"
-                noLink
-                className={`rounded-xl px-3 py-1 transition-all duration-500 ${
-                  scrolled
-                    ? 'bg-white/95 shadow-md shadow-[#7a003c]/8 ring-1 ring-[#c89b8f]/20'
-                    : 'bg-white/80 shadow-sm ring-1 ring-white/60'
-                }`}
-              />
+              <Logo size="lg" noLink />
             </div>
 
             <div className="hidden lg:flex items-center gap-6 xl:gap-10 min-w-0">
@@ -87,15 +79,15 @@ export default function Navbar() {
                   <Link
                     key={link.name}
                     href={link.href}
-                    className={`shrink-0 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors duration-300 relative py-2 whitespace-nowrap ${
+                    className={`shrink-0 text-[11px] font-medium uppercase tracking-[0.16em] transition-colors duration-300 relative py-2 whitespace-nowrap ${
                       isActive
-                        ? 'text-[#7a003c]'
-                        : 'text-[#2a2a2a]/55 hover:text-[#7a003c]'
+                        ? 'text-luxury-burgundy'
+                        : 'text-luxury-text/55 hover:text-luxury-burgundy'
                     }`}
                   >
                     {link.name}
                     {isActive && (
-                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#7a003c] rounded-full animate-fadeIn" />
+                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-luxury-burgundy rounded-full animate-fadeIn" />
                     )}
                   </Link>
                 );
