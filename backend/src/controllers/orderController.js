@@ -297,6 +297,34 @@ const resetNewOrderCount = async (req, res) => {
   res.json({ ok: true });
 };
 
+// Admin — permanently delete an order and its items
+const deleteOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      select: { id: true, customerName: true, orderStatus: true },
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    // Cascade delete handles orderItems automatically
+    await prisma.order.delete({ where: { id } });
+
+    console.info(`[order delete] admin deleted order=${id} (customer: ${order.customerName})`);
+
+    res.json({
+      message: `Order #${id.slice(0, 8)}… for "${order.customerName}" has been permanently deleted.`,
+    });
+  } catch (error) {
+    console.error('Delete order error:', error);
+    res.status(500).json({ error: 'Server error deleting order.' });
+  }
+};
+
 module.exports = {
   placeOrder,
   getMyOrders,
@@ -305,4 +333,5 @@ module.exports = {
   updateOrderStatus,
   getNewOrderCount,
   resetNewOrderCount,
+  deleteOrder,
 };

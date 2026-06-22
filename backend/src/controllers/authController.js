@@ -319,8 +319,36 @@ const deactivateCustomer = async (req, res) => {
   }
 };
 
-// Alias — frontend may call DELETE for soft delete (not hard delete)
-const deleteCustomer = deactivateCustomer;
+// Hard delete — permanently remove customer and all their data
+const deleteCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (id === req.user.id) {
+      return res.status(400).json({ error: 'You cannot delete your own admin account.' });
+    }
+
+    const target = await loadCustomerTarget(id);
+    if (!target) {
+      return res.status(404).json({ error: 'Customer not found.' });
+    }
+    if (target.role === 'admin') {
+      return res.status(403).json({ error: 'Administrator accounts cannot be deleted.' });
+    }
+
+    // Prisma cascade will handle: cartItems, wishlists, otps, notifications, chatMessages, reviews
+    // Orders use onDelete: SetNull so they are preserved with userId set to null
+    await prisma.user.delete({ where: { id } });
+
+    console.info(`[customer delete] admin=${req.user.id} permanently deleted customer=${id} (${target.email})`);
+
+    res.json({
+      message: `Customer "${target.name}" has been permanently deleted. Their order history is preserved.`,
+    });
+  } catch (error) {
+    return respondCustomerActionError(res, error, 'delete');
+  }
+};
 
 // Restore previously deactivated customer
 const activateCustomer = async (req, res) => {

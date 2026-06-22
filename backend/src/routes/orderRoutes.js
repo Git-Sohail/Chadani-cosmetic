@@ -7,6 +7,7 @@ const {
   getOrderDetails,
   updateOrderStatus,
   getNewOrderCount,
+  deleteOrder,
 } = require('../controllers/orderController');
 const { authenticateUser, isAdmin } = require('../middleware/auth');
 
@@ -20,5 +21,6 @@ router.get('/new-count', isAdmin, getNewOrderCount);
 router.get('/', isAdmin, getAllOrders);
 router.get('/:id', getOrderDetails);
 router.put('/:id/status', isAdmin, updateOrderStatus);
+router.delete('/:id', isAdmin, deleteOrder);
 
 module.exports = router;

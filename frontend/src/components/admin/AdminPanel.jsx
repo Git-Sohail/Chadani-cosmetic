@@ -217,6 +217,24 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
   const customerTotalPages = Math.max(1, Math.ceil(filteredCustomers.length / PAGE_SIZE));
   const pagedCustomers = filteredCustomers.slice((customerPage - 1) * PAGE_SIZE, customerPage * PAGE_SIZE);
 
+  // ── Filtered + paginated reviews ──────────────────────────────────────────
+  const filteredReviews = useMemo(() => {
+    let list = [...reviews];
+    if (reviewSearch) {
+      const q = reviewSearch.toLowerCase();
+      list = list.filter((r) =>
+        (r.product?.name || '').toLowerCase().includes(q) ||
+        (r.user?.name || '').toLowerCase().includes(q) ||
+        (r.comment || '').toLowerCase().includes(q)
+      );
+    }
+    if (reviewRating) list = list.filter((r) => r.rating === parseInt(reviewRating));
+    return list;
+  }, [reviews, reviewSearch, reviewRating]);
+
+  const reviewTotalPages = Math.max(1, Math.ceil(filteredReviews.length / PAGE_SIZE));
+  const pagedReviews = filteredReviews.slice((reviewPage - 1) * PAGE_SIZE, reviewPage * PAGE_SIZE);
+
   const uploadAuthHeaders = () => ({
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -463,21 +481,23 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
       showToast('You cannot remove your own admin account.', 'error');
       return;
     }
-    if (!confirm(`Remove "${customerName}"?\n\nThis deactivates their account. Order history and sales data will be kept.`)) return;
+    const confirmed = window.confirm(`Permanently delete "${customerName}"?\n\nThis will remove their account and all associated data. Order history will be preserved but unlinked. This action cannot be undone.`);
+    if (!confirmed) return;
     try {
-      const res = await axios.patch(`${API_URL}/auth/customers/${customerId}/deactivate`, {}, {
+      const res = await axios.delete(`${API_URL}/auth/customers/${customerId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      showToast(res.data?.message || 'Customer removed successfully.', 'success');
+      showToast(res.data?.message || 'Customer deleted successfully.', 'success');
       fetchData();
     } catch (error) {
+      console.error('[admin] Delete customer error:', error.response?.status, error.response?.data);
       const msg =
         error.response?.data?.error ||
         (error.response?.status === 404
           ? 'Customer not found.'
           : error.response?.status === 403
-            ? 'You are not allowed to remove this account.'
-            : 'Could not remove customer. Please try again.');
+            ? 'You are not allowed to delete this account.'
+            : 'Could not delete customer. Please try again.');
       showToast(msg, 'error');
     }
   };
@@ -508,6 +528,22 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
       fetchData();
     } catch (error) {
       showToast('Failed to delete review.', 'error');
+    }
+  };
+
+  // Delete an order permanently
+  const handleDeleteOrder = async (orderId) => {
+    const confirmed = window.confirm('Permanently delete this order?\n\nThis will remove the order and all its items. This action cannot be undone.');
+    if (!confirmed) return;
+    try {
+      const res = await axios.delete(`${API_URL}/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      showToast(res.data?.message || 'Order deleted successfully.', 'success');
+      fetchData();
+    } catch (error) {
+      console.error('[admin] Delete order error:', error.response?.status, error.response?.data);
+      showToast(error.response?.data?.error || 'Could not delete order. Please try again.', 'error');
     }
   };
 
@@ -924,6 +960,7 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                   <AdminOrdersSection
                     orders={pagedOrders}
                     onStatusChange={handleOrderStatusChange}
+                    onDeleteOrder={handleDeleteOrder}
                   />
                   <Pagination page={orderPage} totalPages={orderTotalPages} onPage={setOrderPage} />
                 </div>
@@ -949,8 +986,6 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                       options: [
                         { label: 'Verified', value: 'verified' },
                         { label: 'Unverified', value: 'unverified' },
-                        { label: 'Active', value: 'active' },
-                        { label: 'Deactivated', value: 'deactivated' },
                       ],
                     }]}
                     filterValues={{ verified: customerVerified }}
@@ -1030,24 +1065,14 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                                     : '—'}
                                 </td>
                                 <td className="py-5 px-4 text-right">
-                                  {c.isActive === false ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRestoreCustomer(c.id, c.name)}
-                                      className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-black uppercase tracking-wider hover:bg-emerald-100 transition-colors"
-                                    >
-                                      Restore Customer
-                                    </button>
-                                  ) : (
                                     <button
                                       type="button"
                                       onClick={() => handleRemoveCustomer(c.id, c.name)}
                                       disabled={c.id === user?.id}
-                                      className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[9px] font-black uppercase tracking-wider hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                      className="px-3 py-1.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-[9px] font-black uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
-                                      Remove
+                                      Delete
                                     </button>
-                                  )}
                                 </td>
                               </tr>
                             );

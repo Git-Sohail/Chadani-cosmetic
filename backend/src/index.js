@@ -29,8 +29,8 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 // Socket.IO — real-time chat
 const io = new Server(httpServer, {
   cors: {
-    origin: [FRONTEND_URL, 'http://localhost:3000'],
-    methods: ['GET', 'POST'],
+    origin: [FRONTEND_URL, 'http://localhost:3000', 'https://chadani-cosmetic.vercel.app'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   },
 });
@@ -64,7 +64,8 @@ io.on('connection', (socket) => {
 
 // Middleware
 app.use(cors({
-  origin: [FRONTEND_URL, 'http://localhost:3000'],
+  origin: [FRONTEND_URL, 'http://localhost:3000', 'https://chadani-cosmetic.vercel.app'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
 app.use(express.json());

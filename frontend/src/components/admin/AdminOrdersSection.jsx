@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Eye, ChevronDown, ChevronUp, Package } from 'lucide-react';
+import { Eye, ChevronDown, ChevronUp, Package, Trash2 } from 'lucide-react';
 import OrderSummaryPanel from './OrderSummaryPanel';
 import OrderedProductsTable from './OrderedProductsTable';
 import ImagePreviewModal from './ImagePreviewModal';
@@ -23,7 +23,7 @@ function StatusBadge({ status }) {
   );
 }
 
-export default function AdminOrdersSection({ orders, onStatusChange }) {
+export default function AdminOrdersSection({ orders, onStatusChange, onDeleteOrder }) {
   const [expandedId, setExpandedId] = useState(null);
   const [preview, setPreview] = useState({ url: null, alt: '' });
 
@@ -107,6 +107,16 @@ export default function AdminOrdersSection({ orders, onStatusChange }) {
                     <option value="delivered">Delivered</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
+                  {onDeleteOrder && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteOrder(order.id)}
+                      className="p-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-600 hover:text-white transition-all"
+                      title="Delete order permanently"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
 
