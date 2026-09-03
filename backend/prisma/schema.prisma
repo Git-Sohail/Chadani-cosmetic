@@ -179,6 +179,10 @@ model ChatMessage {
   senderId       String
   senderRole     String
   body           String
+  mediaUrl       String?
+  mediaType      String?   // "image" | "video"
+  mediaName      String?
+  mediaSize      Int?
   readAt         DateTime?
   createdAt      DateTime  @default(now())
 

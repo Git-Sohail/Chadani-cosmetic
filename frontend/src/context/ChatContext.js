@@ -226,15 +226,41 @@ export function ChatProvider({ children }) {
     [API_URL, token, authHeaders, isAdmin, fetchConversations]
   );
 
+  const uploadMedia = useCallback(
+    async (file) => {
+      if (!token || !file) return null;
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await axios.post(`${API_URL}/chat/upload`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return res.data; // { url, mediaType, mediaName, mediaSize }
+    },
+    [API_URL, token]
+  );
+
   const sendMessage = useCallback(
-    async (body, conversationId) => {
-      if (!token || !body?.trim()) return false;
+    async (body, conversationId, media = null) => {
+      const text = typeof body === 'string' ? body.trim() : '';
+      if (!token || (!text && !media?.url)) return false;
       setSending(true);
       try {
         const url = isAdmin
           ? `${API_URL}/chat/conversations/${conversationId}/messages`
           : `${API_URL}/chat/messages`;
-        const res = await axios.post(url, { body: body.trim() }, authHeaders());
+
+        const payload = {
+          body: text,
+          mediaUrl: media?.url || null,
+          mediaType: media?.mediaType || null,
+          mediaName: media?.mediaName || null,
+          mediaSize: media?.mediaSize || null,
+        };
+
+        const res = await axios.post(url, payload, authHeaders());
         const newMsg = res.data.message;
 
         // Optimistically append sender's own message immediately
@@ -321,6 +347,7 @@ export function ChatProvider({ children }) {
         fetchConversations,
         openConversation,
         sendMessage,
+        uploadMedia,
         markActiveRead,
         refreshActiveMessages,
         fetchUnreadCount,

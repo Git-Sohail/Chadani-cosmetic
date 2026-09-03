@@ -1,6 +1,7 @@
 const prisma = require('../db');
 const { hasChatModels } = require('../utils/chatModels');
 const { getIo } = require('../socket');
+const { storeChatMedia } = require('../utils/chatMediaStorage');
 
 const CHAT_SETUP_HINT =
   'Chat database not ready. Stop the server, run: npx prisma db push && npx prisma generate, then npm run dev';
@@ -18,7 +19,11 @@ function formatMessage(message) {
     conversationId: message.conversationId,
     senderId: message.senderId,
     senderRole: message.senderRole,
-    body: message.body,
+    body: message.body || '',
+    mediaUrl: message.mediaUrl || null,
+    mediaType: message.mediaType || null,
+    mediaName: message.mediaName || null,
+    mediaSize: message.mediaSize || null,
     readAt: message.readAt,
     createdAt: message.createdAt,
     sender: message.sender
@@ -192,19 +197,51 @@ const getConversationMessages = async (req, res) => {
   }
 };
 
+const uploadChatMedia = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No media file provided.' });
+    }
+
+    const { url, mediaType, mediaName, mediaSize, storage } = await storeChatMedia(req.file);
+    res.status(200).json({
+      url,
+      mediaType,
+      mediaName,
+      mediaSize,
+      storage,
+    });
+  } catch (error) {
+    console.error('Chat media upload error:', error.message || error);
+    res.status(400).json({
+      error: error.message || 'Failed to upload media. Please verify file format and size.',
+    });
+  }
+};
+
 const sendMessage = async (req, res) => {
   try {
     if (!hasChatModels()) {
       return res.status(503).json({ error: CHAT_SETUP_HINT });
     }
-    const { body } = req.body;
+    const { body, mediaUrl, mediaType, mediaName, mediaSize } = req.body;
     const trimmed = typeof body === 'string' ? body.trim() : '';
 
-    if (!trimmed) {
-      return res.status(400).json({ error: 'Message cannot be empty.' });
+    if (!trimmed && !mediaUrl) {
+      return res.status(400).json({ error: 'Message content or media attachment is required.' });
     }
     if (trimmed.length > 2000) {
       return res.status(400).json({ error: 'Message is too long (max 2000 characters).' });
+    }
+
+    // Validate media fields if present
+    if (mediaUrl) {
+      if (typeof mediaUrl !== 'string' || !mediaUrl.startsWith('http')) {
+        return res.status(400).json({ error: 'Invalid media URL.' });
+      }
+      if (mediaType && !['image', 'video'].includes(mediaType)) {
+        return res.status(400).json({ error: 'Invalid media type.' });
+      }
     }
 
     const senderRole = req.user.role === 'admin' ? 'admin' : 'customer';
@@ -237,6 +274,10 @@ const sendMessage = async (req, res) => {
         senderId: req.user.id,
         senderRole,
         body: trimmed,
+        mediaUrl: mediaUrl || null,
+        mediaType: mediaType || null,
+        mediaName: mediaName ? String(mediaName).slice(0, 255) : null,
+        mediaSize: typeof mediaSize === 'number' ? mediaSize : null,
       },
       include: {
         sender: { select: { id: true, name: true, profileImage: true } },
@@ -342,6 +383,7 @@ module.exports = {
   listConversations,
   getConversationMessages,
   sendMessage,
+  uploadChatMedia,
   markConversationRead,
   getUnreadTotal,
 };

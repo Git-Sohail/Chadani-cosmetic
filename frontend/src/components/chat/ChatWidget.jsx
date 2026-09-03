@@ -1,13 +1,31 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { MessageCircle, X, Send, Loader2, ArrowLeft } from 'lucide-react';
+import {
+  MessageCircle,
+  X,
+  Send,
+  Loader2,
+  ArrowLeft,
+  Paperclip,
+  Film,
+  Image as ImageIcon,
+  AlertCircle,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
+import ChatMessageMedia from './ChatMessageMedia';
 
 function formatTime(dateStr) {
   if (!dateStr) return '';
   return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function ChatWidget() {
@@ -20,6 +38,7 @@ export default function ChatWidget() {
     isCustomer,
     fetchMyConversation,
     sendMessage,
+    uploadMedia,
     markActiveRead,
     activeConversation,
     widgetOpen,
@@ -28,8 +47,13 @@ export default function ChatWidget() {
   } = useChat();
 
   const [draft, setDraft] = useState('');
+  const [selectedMedia, setSelectedMedia] = useState(null); // { file, previewUrl, mediaType, name, size }
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Load conversation history when widget opens; socket handles new messages
   useEffect(() => {
@@ -52,18 +76,101 @@ export default function ChatWidget() {
     }
   }, [widgetOpen]);
 
+  // Clean up object URLs on unmount or file removal
+  useEffect(() => {
+    return () => {
+      if (selectedMedia?.previewUrl) {
+        URL.revokeObjectURL(selectedMedia.previewUrl);
+      }
+    };
+  }, [selectedMedia]);
+
   if (!user || user.role !== 'customer') return null;
+
+  const handleFileSelect = (e) => {
+    setUploadError('');
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+
+    if (!isImage && !isVideo) {
+      setUploadError('Please select a valid image (JPG, PNG, WebP) or video (MP4, WebM).');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (isImage && file.size > 5 * 1024 * 1024) {
+      setUploadError('Image size exceeds the 5 MB limit.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (isVideo && file.size > 20 * 1024 * 1024) {
+      setUploadError('Video size exceeds the 20 MB limit.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (selectedMedia?.previewUrl) {
+      URL.revokeObjectURL(selectedMedia.previewUrl);
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setSelectedMedia({
+      file,
+      previewUrl,
+      mediaType: isVideo ? 'video' : 'image',
+      name: file.name,
+      size: file.size,
+    });
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeSelectedMedia = () => {
+    if (selectedMedia?.previewUrl) {
+      URL.revokeObjectURL(selectedMedia.previewUrl);
+    }
+    setSelectedMedia(null);
+    setUploadError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!draft.trim() || sending) return;
     const text = draft.trim();
-    setDraft('');
-    const ok = await sendMessage(text, activeConversation?.id);
-    if (!ok) {
-      setDraft(text);
-    } else {
+    if ((!text && !selectedMedia) || sending || uploadingMedia) return;
+
+    setUploadError('');
+    let uploaded = null;
+
+    if (selectedMedia) {
+      setUploadingMedia(true);
+      try {
+        uploaded = await uploadMedia(selectedMedia.file);
+        if (!uploaded?.url) {
+          throw new Error('Upload failed');
+        }
+      } catch (err) {
+        setUploadingMedia(false);
+        setUploadError(
+          err.response?.data?.error ||
+            'Failed to upload attachment. Please check file and try again.'
+        );
+        return;
+      }
+      setUploadingMedia(false);
+    }
+
+    const ok = await sendMessage(text, activeConversation?.id, uploaded);
+    if (ok) {
+      setDraft('');
+      removeSelectedMedia();
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    } else if (uploaded) {
+      setUploadError('Could not send message. Please retry.');
     }
   };
 
@@ -73,6 +180,8 @@ export default function ChatWidget() {
       handleSend(e);
     }
   };
+
+  const isSendingOrUploading = sending || uploadingMedia;
 
   return (
     <>
@@ -154,7 +263,7 @@ export default function ChatWidget() {
                 <div className="space-y-1 max-w-xs">
                   <p className="font-serif text-base text-brand-dark">How can we help?</p>
                   <p className="text-xs text-brand-muted leading-relaxed">
-                    Send us a message and our Dharan boutique team will assist you with products, orders, or delivery.
+                    Send us a message or attach photos of products, receipts, or delivery questions.
                   </p>
                 </div>
               </div>
@@ -172,19 +281,25 @@ export default function ChatWidget() {
                     } ${isSequence ? 'mt-1' : 'mt-2.5'}`}
                   >
                     <div
-                      className={`max-w-[80%] px-3.5 py-2 text-xs leading-relaxed break-words ${
+                      className={`max-w-[85%] px-3.5 py-2 text-xs leading-relaxed break-words ${
                         isCustomerMessage
                           ? 'bg-brand-dark text-brand-surface rounded-tl-sm rounded-tr-sm rounded-bl-sm'
                           : 'bg-brand-surface border border-brand-border text-brand-dark rounded-tr-sm rounded-br-sm rounded-bl-sm shadow-2xs'
                       }`}
                     >
-                      <p className="whitespace-pre-wrap">{msg.body}</p>
+                      {msg.mediaUrl ? (
+                        <ChatMessageMedia
+                          mediaUrl={msg.mediaUrl}
+                          mediaType={msg.mediaType}
+                          mediaName={msg.mediaName}
+                          caption={msg.body}
+                          isCustomerMessage={isCustomerMessage}
+                        />
+                      ) : (
+                        <p className="whitespace-pre-wrap">{msg.body}</p>
+                      )}
                     </div>
-                    <span
-                      className={`text-[9px] font-mono mt-0.5 px-1 ${
-                        isCustomerMessage ? 'text-brand-muted' : 'text-brand-muted'
-                      }`}
-                    >
+                    <span className="text-[9px] font-mono mt-0.5 px-1 text-brand-muted">
                       {formatTime(msg.createdAt)}
                     </span>
                   </div>
@@ -194,30 +309,117 @@ export default function ChatWidget() {
             <div ref={bottomRef} />
           </div>
 
+          {/* Attachment Preview Card */}
+          {selectedMedia && (
+            <div className="px-3 pt-2 pb-1 bg-brand-surface border-t border-brand-border/60">
+              <div className="flex items-center justify-between p-2 bg-brand-bg rounded border border-brand-border text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {selectedMedia.mediaType === 'image' ? (
+                    <div className="relative w-10 h-10 rounded overflow-hidden border border-brand-border shrink-0 bg-brand-surface">
+                      <img
+                        src={selectedMedia.previewUrl}
+                        alt="Selected attachment"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded border border-brand-border bg-brand-surface flex items-center justify-center shrink-0">
+                      <Film className="w-5 h-5 text-brand-accent" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-brand-dark truncate max-w-[160px] sm:max-w-[200px]">
+                      {selectedMedia.name}
+                    </p>
+                    <p className="text-[9px] text-brand-muted font-mono">
+                      {formatBytes(selectedMedia.size)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {uploadingMedia ? (
+                    <span className="text-[10px] text-brand-accent font-medium flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Uploading…
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={removeSelectedMedia}
+                      className="p-1 text-brand-muted hover:text-red-700 cursor-pointer"
+                      aria-label="Remove attachment"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Upload Error Banner */}
+          {uploadError && (
+            <div className="px-3 py-1.5 bg-red-50 border-t border-red-200 text-red-700 text-[11px] flex items-center gap-2">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span className="flex-1 truncate">{uploadError}</span>
+              <button
+                type="button"
+                onClick={() => setUploadError('')}
+                className="p-0.5 hover:text-red-900 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           {/* Composer Input Area */}
           <form
             onSubmit={handleSend}
             className="p-3 bg-brand-surface border-t border-brand-border flex items-center gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
           >
+            {/* Native file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isSendingOrUploading}
+              className="p-2 text-brand-muted hover:text-brand-dark transition-colors cursor-pointer shrink-0 disabled:opacity-40"
+              aria-label="Attach photo or video"
+              title="Attach photo or video"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
+
             <input
               ref={inputRef}
               type="text"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your message…"
+              placeholder={
+                selectedMedia ? 'Add a caption (optional)…' : 'Type your message…'
+              }
               maxLength={2000}
-              disabled={sending}
+              disabled={isSendingOrUploading}
               className="flex-1 px-3.5 py-2 text-xs bg-brand-bg/60 border border-brand-border text-brand-dark placeholder:text-brand-muted/60 focus:outline-none focus:border-brand-accent transition-colors"
             />
+
             <button
               type="submit"
-              disabled={!draft.trim() || sending}
+              disabled={(!draft.trim() && !selectedMedia) || isSendingOrUploading}
               className="p-2.5 bg-brand-dark text-brand-surface hover:bg-brand-accent disabled:opacity-40 transition-colors cursor-pointer shrink-0"
               aria-label="Send message"
               title="Send message"
             >
-              {sending ? (
+              {isSendingOrUploading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Send className="w-4 h-4" />

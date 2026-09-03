@@ -21,4 +21,29 @@ function uploadBufferToCloudinary(buffer) {
   });
 }
 
-module.exports = { isCloudinaryConfigured, uploadBufferToCloudinary };
+function uploadMediaToCloudinary(buffer, resourceType = 'auto') {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'chadani_chat',
+        resource_type: resourceType,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve({
+          url: result.secure_url,
+          format: result.format,
+          resourceType: result.resource_type,
+          bytes: result.bytes,
+        });
+      }
+    );
+    uploadStream.end(buffer);
+  });
+}
+
+module.exports = {
+  isCloudinaryConfigured,
+  uploadBufferToCloudinary,
+  uploadMediaToCloudinary,
+};

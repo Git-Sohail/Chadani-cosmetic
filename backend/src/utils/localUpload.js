@@ -30,4 +30,18 @@ function saveImageBuffer(buffer, originalName = 'image') {
   return `${getPublicBaseUrl()}/uploads/${filename}`;
 }
 
-module.exports = { saveImageBuffer, UPLOAD_DIR };
+function saveMediaBuffer(buffer, originalName = 'media') {
+  ensureUploadDir();
+
+  const ext = path.extname(originalName).toLowerCase();
+  const safeExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.webm'];
+  const safeExt = safeExts.includes(ext) ? ext : '.jpg';
+  const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${safeExt}`;
+  const filePath = path.join(UPLOAD_DIR, filename);
+
+  fs.writeFileSync(filePath, buffer);
+
+  return `${getPublicBaseUrl()}/uploads/${filename}`;
+}
+
+module.exports = { saveImageBuffer, saveMediaBuffer, UPLOAD_DIR };
