@@ -2,41 +2,61 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Eye, ChevronDown, ChevronUp, Package, Trash2 } from 'lucide-react';
-import OrderSummaryPanel from './OrderSummaryPanel';
+import { Eye, ChevronDown, ChevronUp, Package } from 'lucide-react';
 import OrderedProductsTable from './OrderedProductsTable';
 import ImagePreviewModal from './ImagePreviewModal';
 import { formatPrice } from '../../utils/currency';
 
+const STATUS_STYLES = {
+  pending: 'bg-amber-50 text-amber-800 border-amber-200',
+  confirmed: 'bg-blue-50 text-blue-800 border-blue-200',
+  shipped: 'bg-purple-50 text-purple-800 border-purple-200',
+  delivered: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  cancelled: 'bg-red-50 text-red-800 border-red-200',
+};
+
 function StatusBadge({ status }) {
-  const styles = {
-    pending: 'bg-pink-50 text-pink-700 border-pink-100',
-    confirmed: 'bg-amber-50 text-amber-700 border-amber-100',
-    shipped: 'bg-cyan-50 text-cyan-700 border-cyan-100',
-    delivered: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    cancelled: 'bg-red-50 text-red-600 border-red-100',
-  };
+  const norm = (status || 'pending').toLowerCase();
+  const style = STATUS_STYLES[norm] || STATUS_STYLES.pending;
   return (
-    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${styles[status] || styles.pending}`}>
-      {status}
+    <span className={`px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider border ${style}`}>
+      {norm}
     </span>
   );
 }
 
-export default function AdminOrdersSection({ orders, onStatusChange, onDeleteOrder }) {
+export default function AdminOrdersSection({ orders, onStatusChange }) {
   const [expandedId, setExpandedId] = useState(null);
   const [preview, setPreview] = useState({ url: null, alt: '' });
+  const [pendingStatusChange, setPendingStatusChange] = useState(null);
 
-  const items = (order) => order.products || order.orderItems || [];
+  const getItems = (order) => order.products || order.orderItems || [];
 
-  if (!orders.length) {
+  if (!orders || orders.length === 0) {
     return (
-      <div className="text-center py-20 text-rose-900/40 text-xs font-black uppercase tracking-widest border-2 border-dashed border-pink-100 rounded-[2rem]">
-        <Package className="w-10 h-10 mx-auto mb-3 text-pink-200" />
-        No orders yet
+      <div className="text-center py-16 text-brand-muted text-xs uppercase tracking-widest border border-dashed border-brand-border bg-brand-surface">
+        <Package className="w-8 h-8 mx-auto mb-2 text-brand-border" />
+        No orders match the selected criteria
       </div>
     );
   }
+
+  const handleSelectStatus = (orderId, currentStatus, newStatus) => {
+    if (currentStatus === 'cancelled') {
+      return alert('This order is cancelled and its inventory was restored. Cancelled orders cannot be modified.');
+    }
+    if (currentStatus === 'delivered' && newStatus !== 'delivered') {
+      return alert('Delivered orders cannot be moved back to unfulfilled or cancelled states.');
+    }
+    setPendingStatusChange({ orderId, currentStatus, newStatus });
+  };
+
+  const confirmStatusChange = () => {
+    if (pendingStatusChange && onStatusChange) {
+      onStatusChange(pendingStatusChange.orderId, pendingStatusChange.newStatus);
+    }
+    setPendingStatusChange(null);
+  };
 
   return (
     <>
@@ -46,118 +66,151 @@ export default function AdminOrdersSection({ orders, onStatusChange, onDeleteOrd
         onClose={() => setPreview({ url: null, alt: '' })}
       />
 
-      <div className="space-y-4">
+      {/* Confirmation Dialog */}
+      {pendingStatusChange && (
+        <div className="fixed inset-0 z-[200] bg-brand-dark/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-brand-surface border border-brand-border max-w-sm w-full p-6 space-y-4">
+            <h3 className="font-serif text-lg text-brand-dark">Confirm Status Change</h3>
+            <p className="text-xs text-brand-muted leading-relaxed">
+              Are you sure you want to update order <strong>#{pendingStatusChange.orderId.slice(0, 8)}</strong> to{' '}
+              <span className="uppercase font-mono font-bold text-brand-dark">
+                {pendingStatusChange.newStatus}
+              </span>?
+              {pendingStatusChange.newStatus === 'cancelled' && (
+                <span className="block text-red-700 font-medium mt-1">
+                  Warning: Cancelling will atomically restore the order&apos;s product inventory and prevent future edits.
+                </span>
+              )}
+            </p>
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setPendingStatusChange(null)}
+                className="flex-1 px-4 py-2.5 border border-brand-border text-xs uppercase tracking-wider text-brand-dark hover:border-brand-accent cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmStatusChange}
+                className={`flex-1 px-4 py-2.5 text-xs uppercase tracking-wider text-brand-surface cursor-pointer ${
+                  pendingStatusChange.newStatus === 'cancelled'
+                    ? 'bg-red-700 hover:bg-red-800'
+                    : 'bg-brand-dark hover:bg-brand-accent'
+                }`}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
         {orders.map((order) => {
           const isOpen = expandedId === order.id;
-          const lineItems = items(order);
+          const lineItems = getItems(order);
+          const currentStatus = (order.orderStatus || 'pending').toLowerCase();
+          const isCancelled = currentStatus === 'cancelled';
+          const isDelivered = currentStatus === 'delivered';
 
           return (
             <article
               key={order.id}
-              className="bg-white border border-pink-100/70 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+              className="bg-brand-surface border border-brand-border transition-colors hover:border-brand-accent/60"
             >
-              <div className="p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4 border-b border-pink-50/80">
+              <div className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-4 min-w-0">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">Order ID</p>
-                    <p className="font-mono font-black text-sm text-rose-950">#{order.id.slice(0, 8)}…</p>
+                  <div className="min-w-[100px]">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-brand-muted block">
+                      Order Ref
+                    </span>
+                    <p className="font-mono text-xs font-semibold text-brand-dark">
+                      #{order.id.slice(0, 8)}…
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">Customer</p>
-                    <p className="font-extrabold text-sm text-rose-950">{order.customerName}</p>
-                    <p className="text-[10px] text-rose-900/50 font-semibold">{order.phone}</p>
+
+                  <div className="min-w-[140px]">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-brand-muted block">
+                      Client
+                    </span>
+                    <p className="font-medium text-xs text-brand-dark truncate">{order.customerName}</p>
+                    <p className="text-[11px] text-brand-muted font-mono">{order.phone}</p>
                   </div>
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">Date</p>
-                    <p className="text-xs font-bold text-rose-950/70">
+
+                  <div className="min-w-[90px]">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-brand-muted block">
+                      Placed On
+                    </span>
+                    <p className="text-xs text-brand-muted">
                       {new Date(order.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">Total</p>
-                    <p className="font-black text-rose-900">{formatPrice(order.totalAmount)}</p>
+
+                  <div className="min-w-[90px]">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-brand-muted block">
+                      Total
+                    </span>
+                    <p className="font-mono text-xs font-medium text-brand-dark">
+                      {formatPrice(order.totalAmount)}
+                    </p>
                   </div>
-                  <StatusBadge status={order.orderStatus} />
+
+                  <div>
+                    <StatusBadge status={order.orderStatus} />
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setExpandedId(isOpen ? null : order.id)}
-                    className="px-4 py-2.5 rounded-xl border border-pink-100 text-[10px] font-black uppercase tracking-widest text-rose-950 hover:bg-pink-50 flex items-center gap-1.5"
+                    className="px-3 py-1.5 border border-brand-border text-[11px] uppercase tracking-wider text-brand-dark hover:border-brand-accent flex items-center gap-1 cursor-pointer"
                   >
                     {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    {isOpen ? 'Hide items' : `View ${lineItems.length} items`}
+                    <span>{isOpen ? 'Hide items' : `${lineItems.length} items`}</span>
                   </button>
+
                   <Link
                     href={`/admin/orders/${order.id}`}
-                    className="px-4 py-2.5 rounded-xl bg-rose-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-rose-950 flex items-center gap-1.5"
+                    className="px-3 py-1.5 bg-brand-dark text-brand-surface text-[11px] uppercase tracking-wider hover:bg-brand-accent flex items-center gap-1.5 transition-colors"
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    Full details
+                    <span>Inspection</span>
                   </Link>
-                  <select
-                    value={order.orderStatus}
-                    onChange={(e) => onStatusChange(order.id, e.target.value)}
-                    className="bg-white border border-pink-200 rounded-xl text-[9px] font-black uppercase tracking-widest px-3 py-2.5"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                  {onDeleteOrder && (
-                    <button
-                      type="button"
-                      onClick={() => onDeleteOrder(order.id)}
-                      className="p-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-600 hover:text-white transition-all"
-                      title="Delete order permanently"
+
+                  {!isCancelled && !isDelivered && (
+                    <select
+                      value={currentStatus}
+                      onChange={(e) => handleSelectStatus(order.id, currentStatus, e.target.value)}
+                      aria-label={`Change status for order #${order.id.slice(0, 8)}`}
+                      className="px-2.5 py-1.5 bg-brand-surface border border-brand-border text-[11px] uppercase tracking-wider font-medium text-brand-dark focus:outline-none focus:border-brand-accent cursor-pointer"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                      <option value="pending">Pending</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="shipped">Shipped</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="cancelled">Cancel</option>
+                    </select>
                   )}
                 </div>
               </div>
 
-              {!isOpen && lineItems.length > 0 && (
-                <div className="px-5 py-3 flex gap-2 overflow-x-auto custom-scrollbar bg-pink-50/20">
-                  {lineItems.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => item.productImage && setPreview({ url: item.productImage, alt: item.productName })}
-                      className="flex items-center gap-2 shrink-0 bg-white border border-pink-100 rounded-xl px-2 py-1.5 hover:border-rose-300 transition-colors"
-                    >
-                      <div className="w-12 h-12 rounded-lg overflow-hidden border border-pink-100 bg-pink-50 flex-shrink-0">
-                        {item.productImage ? (
-                          <img src={item.productImage} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-pink-100" />
-                        )}
-                      </div>
-                      <div className="text-left max-w-[140px]">
-                        <p className="text-[10px] font-bold text-rose-950 truncate">{item.productName}</p>
-                        <p className="text-[9px] text-rose-900/50">×{item.quantity} · {formatPrice(item.price)}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
               {isOpen && (
-                <div className="p-5 sm:p-6 space-y-6 bg-[#fffafb]/50">
-                  <OrderSummaryPanel order={order} />
-                  <div>
-                    <h4 className="text-xs font-black uppercase tracking-widest text-rose-900 mb-4">
-                      Ordered products (checkout snapshot)
-                    </h4>
-                    <OrderedProductsTable
-                      items={lineItems}
-                      compact
-                      onImagePreview={(url, alt) => setPreview({ url, alt })}
-                    />
+                <div className="p-4 sm:p-5 border-t border-brand-border bg-brand-bg/30 space-y-3">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-medium text-brand-dark uppercase tracking-wider text-[11px]">
+                      Line items snapshot:
+                    </span>
+                    <span className="text-brand-muted text-[11px]">
+                      Flat Dharan Delivery (Rs. 100) included in total
+                    </span>
                   </div>
+                  <OrderedProductsTable
+                    items={lineItems}
+                    compact
+                    onImagePreview={(url, alt) => setPreview({ url, alt })}
+                  />
                 </div>
               )}
             </article>

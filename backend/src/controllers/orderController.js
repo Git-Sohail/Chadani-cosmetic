@@ -227,7 +227,24 @@ const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ error: 'Order not found.' });
     }
 
-    if (existing.orderStatus === status) {
+    const currentStatus = (existing.orderStatus || '').toLowerCase();
+    const newStatus = status.toLowerCase();
+
+    // Prevent any changes to already cancelled orders
+    if (currentStatus === 'cancelled') {
+      return res.status(400).json({
+        error: 'This order has already been cancelled and its inventory was restored. Cancelled orders cannot be modified.',
+      });
+    }
+
+    // Prevent moving delivered orders backwards into unfulfilled/cancelled states
+    if (currentStatus === 'delivered' && newStatus !== 'delivered') {
+      return res.status(400).json({
+        error: 'Delivered orders cannot be moved back to unfulfilled or cancelled statuses.',
+      });
+    }
+
+    if (currentStatus === newStatus) {
       const unchanged = await prisma.order.findUnique({
         where: { id },
         include: {
@@ -238,16 +255,46 @@ const updateOrderStatus = async (req, res) => {
       return res.json(formatOrder(unchanged));
     }
 
-    const order = await prisma.order.update({
-      where: { id },
-      data: { orderStatus: status },
-      include: {
-        orderItems: true,
-        user: {
-          select: { name: true, email: true },
+    let order;
+
+    // If cancelling an uncancelled order, restore inventory atomically
+    if (newStatus === 'cancelled') {
+      order = await prisma.$transaction(async (tx) => {
+        const fullOrder = await tx.order.findUnique({
+          where: { id },
+          include: { orderItems: true },
+        });
+
+        if (fullOrder && fullOrder.orderItems) {
+          for (const item of fullOrder.orderItems) {
+            if (item.productId) {
+              await tx.product.update({
+                where: { id: item.productId },
+                data: { stock: { increment: item.quantity } },
+              });
+            }
+          }
+        }
+
+        return tx.order.update({
+          where: { id },
+          data: { orderStatus: 'cancelled' },
+          include: {
+            orderItems: true,
+            user: { select: { name: true, email: true } },
+          },
+        });
+      });
+    } else {
+      order = await prisma.order.update({
+        where: { id },
+        data: { orderStatus: newStatus },
+        include: {
+          orderItems: true,
+          user: { select: { name: true, email: true } },
         },
-      },
-    });
+      });
+    }
 
     const notifyUserId = await resolveNotifyUserId(order);
     if (notifyUserId) {

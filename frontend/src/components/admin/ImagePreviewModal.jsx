@@ -8,28 +8,30 @@ export default function ImagePreviewModal({ imageUrl, alt = 'Product preview', o
 
   return (
     <div
-      className="fixed inset-0 z-[300] bg-rose-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn"
+      className="fixed inset-0 z-[300] bg-brand-dark/80 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="relative max-w-4xl w-full max-h-[90vh] bg-white rounded-3xl overflow-hidden shadow-2xl p-3 border border-pink-100"
+        className="relative max-w-4xl w-full max-h-[90vh] bg-brand-surface overflow-hidden shadow-2xl p-2 border border-brand-border"
         onClick={(e) => e.stopPropagation()}
         role="presentation"
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2.5 rounded-full bg-white/95 text-rose-950 hover:bg-rose-900 hover:text-white transition-all shadow-md"
+          className="absolute top-4 right-4 z-10 p-2 bg-brand-surface/90 text-brand-dark hover:bg-brand-dark hover:text-brand-surface transition-colors cursor-pointer border border-brand-border"
           aria-label="Close preview"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
-        <img
-          src={imageUrl}
-          alt={alt}
-          className="w-full max-h-[85vh] object-contain rounded-2xl bg-pink-50/30"
-        />
+        <div className="w-full max-h-[82vh] overflow-hidden flex items-center justify-center bg-brand-bg/50">
+          <img
+            src={imageUrl}
+            alt={alt}
+            className="max-h-[82vh] w-auto max-w-full object-contain"
+          />
+        </div>
       </div>
     </div>
   );

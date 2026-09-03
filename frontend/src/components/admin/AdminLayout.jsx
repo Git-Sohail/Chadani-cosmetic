@@ -5,15 +5,24 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import {
-  LayoutDashboard, ShoppingBag, Layers, FileSpreadsheet,
-  MessageSquare, LogOut, Loader2, Menu, X, Users,
+  LayoutDashboard,
+  ShoppingBag,
+  Layers,
+  FileSpreadsheet,
+  MessageSquare,
+  LogOut,
+  Loader2,
+  Menu,
+  X,
+  Users,
+  ExternalLink,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import Logo from '../Logo';
 
 const NAV_ITEMS = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, match: (p) => p === '/admin' },
-  { name: 'Inventory', href: '/admin/products', icon: ShoppingBag, match: (p) => p.startsWith('/admin/products') },
+  { name: 'Overview', href: '/admin', icon: LayoutDashboard, match: (p) => p === '/admin' },
+  { name: 'Products', href: '/admin/products', icon: ShoppingBag, match: (p) => p.startsWith('/admin/products') },
   { name: 'Collections', href: '/admin/categories', icon: Layers, match: (p) => p.startsWith('/admin/categories') || p.startsWith('/admin/collections') },
   { name: 'Orders', href: '/admin/orders', icon: FileSpreadsheet, match: (p) => p.startsWith('/admin/orders') },
   { name: 'Customers', href: '/admin/customers', icon: Users, match: (p) => p.startsWith('/admin/customers') },
@@ -21,9 +30,10 @@ const NAV_ITEMS = [
 ];
 
 function breadcrumbLabel(pathname) {
-  if (pathname === '/admin') return 'dashboard';
-  const segment = pathname.split('/').filter(Boolean)[1];
-  return segment || 'dashboard';
+  if (pathname === '/admin') return 'Overview';
+  const segments = pathname.split('/').filter(Boolean);
+  const segment = segments[1] || 'Overview';
+  return segment.charAt(0).toUpperCase() + segment.slice(1);
 }
 
 export default function AdminLayout({ children }) {
@@ -34,21 +44,28 @@ export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Close sidebar on route change (mobile)
-  useEffect(() => { setSidebarOpen(false); }, [pathname]);
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user) router.replace('/login?redirect=/admin');
-      else if (user.role !== 'admin') router.replace('/');
+      if (!user) {
+        router.replace('/login?redirect=/admin');
+      } else if (user.role !== 'admin') {
+        router.replace('/');
+      }
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user?.role === 'admin') fetchUnreadCount();
+    if (user?.role === 'admin') {
+      fetchUnreadCount();
+    }
   }, [user?.role, fetchUnreadCount]);
 
   const handleLogout = () => {
-    if (confirm('Are you sure you want to log out?')) {
+    if (typeof window !== 'undefined' && window.confirm('Are you sure you want to exit the administration suite?')) {
       logout();
       router.push('/login');
     }
@@ -56,9 +73,11 @@ export default function AdminLayout({ children }) {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#fffafb] flex flex-col justify-center items-center gap-4 text-rose-950/40">
-        <Loader2 className="w-12 h-12 animate-spin text-rose-800" />
-        <span className="text-xs font-black uppercase tracking-[0.3em]">Loading admin...</span>
+      <div className="min-h-screen bg-brand-bg flex flex-col justify-center items-center gap-3 text-brand-muted">
+        <Loader2 className="w-8 h-8 animate-spin text-brand-accent" />
+        <span className="text-xs font-mono uppercase tracking-widest">
+          Authenticating administrator...
+        </span>
       </div>
     );
   }
@@ -66,18 +85,18 @@ export default function AdminLayout({ children }) {
   if (!user || user.role !== 'admin') return null;
 
   return (
-    <div className="min-h-screen flex bg-[#fffafb] text-rose-950 font-sans antialiased">
-      {/* Mobile overlay */}
+    <div className="min-h-screen flex bg-brand-bg text-brand-text font-sans antialiased">
+      {/* Mobile backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-rose-950/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-brand-dark/50 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-hidden
         />
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-64 border-r border-pink-100/70 bg-white flex-col justify-between shrink-0 h-screen sticky top-0 z-50">
+      <aside className="hidden lg:flex w-64 border-r border-brand-border bg-brand-surface flex-col justify-between shrink-0 h-screen sticky top-0 z-50">
         <SidebarContent
           pathname={pathname}
           chatUnread={chatUnread}
@@ -88,15 +107,15 @@ export default function AdminLayout({ children }) {
 
       {/* Mobile sidebar drawer */}
       <aside
-        className={`fixed top-0 left-0 h-full w-[min(100vw-3rem,18rem)] sm:w-72 bg-white border-r border-pink-100/70 z-50 flex flex-col transition-transform duration-300 lg:hidden ${
+        className={`fixed top-0 left-0 h-full w-[min(100vw-3rem,18rem)] sm:w-72 bg-brand-surface border-r border-brand-border z-50 flex flex-col transition-transform duration-300 lg:hidden ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        aria-label="Mobile navigation"
+        aria-label="Mobile administrative navigation"
       >
         <button
           type="button"
           onClick={() => setSidebarOpen(false)}
-          className="absolute top-4 right-4 p-2 rounded-xl text-rose-900/60 hover:bg-pink-50 transition-colors"
+          className="absolute top-4 right-4 p-2 text-brand-muted hover:text-brand-dark transition-colors"
           aria-label="Close menu"
         >
           <X className="w-5 h-5" />
@@ -109,31 +128,54 @@ export default function AdminLayout({ children }) {
         />
       </aside>
 
-      {/* Main content */}
+      {/* Main content column */}
       <div className="flex-grow flex flex-col min-h-screen overflow-hidden">
-        <header className="sticky top-0 z-40 px-4 sm:px-6 lg:px-10 h-16 lg:h-[72px] bg-white/95 backdrop-blur-md border-b border-pink-100/50 flex items-center justify-between shrink-0 shadow-sm shadow-pink-100/10">
+        {/* Top Operational Header */}
+        <header className="sticky top-0 z-40 px-4 sm:px-6 lg:px-8 h-16 bg-brand-surface/95 backdrop-blur-md border-b border-brand-border flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-xl text-rose-900/60 hover:bg-pink-50 transition-colors lg:hidden shrink-0"
-              aria-label="Open menu"
+              className="p-2 border border-brand-border text-brand-dark hover:border-brand-accent transition-colors lg:hidden shrink-0"
+              aria-label="Open administrative navigation"
               aria-expanded={sidebarOpen}
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-4 h-4" />
             </button>
+
             <div className="lg:hidden shrink-0">
               <Logo size="sm" noLink />
             </div>
-            <div className="flex items-center gap-2 text-rose-950/40 text-[11px] sm:text-xs font-bold capitalize min-w-0" aria-label="Breadcrumb">
-              <span className="hidden sm:inline">Admin</span>
-              <span className="hidden sm:inline" aria-hidden>/</span>
-              <span className="text-rose-950 font-black tracking-wide truncate">{breadcrumbLabel(pathname)}</span>
+
+            <div className="flex items-center gap-2 text-xs text-brand-muted capitalize min-w-0">
+              <span className="hidden sm:inline font-medium uppercase tracking-wider text-[11px]">
+                Operations
+              </span>
+              <span className="hidden sm:inline text-brand-border" aria-hidden>/</span>
+              <span className="text-brand-dark font-medium truncate">
+                {breadcrumbLabel(pathname)}
+              </span>
             </div>
           </div>
+
+          <div className="flex items-center gap-3">
+            {/* View Storefront Link */}
+            <Link
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-brand-border bg-brand-surface hover:border-brand-accent text-[11px] font-medium uppercase tracking-wider text-brand-dark transition-colors"
+              title="Open customer storefront in a new tab"
+            >
+              <span>View Storefront</span>
+              <ExternalLink className="w-3 h-3 text-brand-accent" />
+            </Link>
+          </div>
         </header>
-        <main className="flex-grow overflow-y-auto custom-scrollbar" id="main-content">
-          <div className="p-4 sm:p-6 lg:p-10 max-w-7xl w-full mx-auto">{children}</div>
+
+        {/* Scrollable Work Area */}
+        <main className="flex-grow overflow-y-auto p-4 sm:p-6 lg:p-8" id="main-content">
+          <div className="max-w-7xl w-full mx-auto">{children}</div>
         </main>
       </div>
     </div>
@@ -143,12 +185,15 @@ export default function AdminLayout({ children }) {
 function SidebarContent({ pathname, chatUnread, user, handleLogout }) {
   return (
     <div className="flex flex-col h-full justify-between">
-      <div className="p-6 space-y-8">
+      <div className="p-6 space-y-6">
         <div className="space-y-1">
           <Logo size="md" href="/admin" />
-          <p className="text-[9px] text-rose-900/40 font-black uppercase tracking-[0.25em] pl-1">Admin Suite</p>
+          <span className="text-[9px] text-brand-accent font-medium uppercase tracking-[0.25em] block">
+            Commerce Operations
+          </span>
         </div>
-        <nav className="space-y-1.5" role="navigation" aria-label="Admin navigation">
+
+        <nav className="space-y-1" role="navigation" aria-label="Admin modules">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = item.match(pathname);
@@ -157,17 +202,17 @@ function SidebarContent({ pathname, chatUnread, user, handleLogout }) {
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? 'page' : undefined}
-                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-medium uppercase tracking-wider transition-colors ${
                   isActive
-                    ? 'bg-rose-900 text-white shadow-lg shadow-rose-900/10'
-                    : 'text-rose-950/60 hover:text-rose-950 hover:bg-pink-50/40'
+                    ? 'bg-brand-dark text-brand-surface'
+                    : 'text-brand-muted hover:text-brand-dark hover:bg-brand-bg/60'
                 }`}
               >
-                <Icon className="w-4 h-4" aria-hidden />
+                <Icon className="w-4 h-4 shrink-0" aria-hidden />
                 <span>{item.name}</span>
                 {item.href === '/admin/messages' && chatUnread > 0 && (
                   <span
-                    className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[9px] font-black flex items-center justify-center"
+                    className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-brand-accent text-brand-surface text-[9px] font-bold flex items-center justify-center font-mono"
                     aria-label={`${chatUnread} unread messages`}
                   >
                     {chatUnread > 9 ? '9+' : chatUnread}
@@ -178,27 +223,35 @@ function SidebarContent({ pathname, chatUnread, user, handleLogout }) {
           })}
         </nav>
       </div>
-      <div className="p-4 border-t border-pink-50 bg-pink-50/10">
-        <div className="flex items-center gap-3 px-2 mb-3">
+
+      <div className="p-4 border-t border-brand-border bg-brand-bg/40 space-y-3">
+        <div className="flex items-center gap-3 px-1">
           <div
-            className="w-9 h-9 bg-rose-900 text-white rounded-full flex items-center justify-center font-bold shadow-md"
+            className="w-8 h-8 bg-brand-dark text-brand-surface flex items-center justify-center font-serif text-sm font-semibold shrink-0"
             aria-hidden
           >
             {user?.name ? user.name.charAt(0) : 'A'}
           </div>
-          <div className="overflow-hidden">
-            <span className="font-extrabold text-xs text-rose-950 block truncate">{user?.name}</span>
-            <span className="text-[10px] text-rose-900/40 font-bold block">Administrator</span>
+          <div className="overflow-hidden min-w-0">
+            <span className="font-medium text-xs text-brand-dark block truncate">
+              {user?.name}
+            </span>
+            <span className="text-[10px] text-brand-muted uppercase tracking-widest block">
+              Store Administrator
+            </span>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
-        >
-          <LogOut className="w-4 h-4" aria-hidden />
-          <span>Logout</span>
-        </button>
+
+        <div className="pt-2 border-t border-brand-border/60">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2.5 px-2 py-1.5 text-xs text-brand-muted hover:text-red-700 transition-colors cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" aria-hidden />
+            <span>Sign Out of Admin</span>
+          </button>
+        </div>
       </div>
     </div>
   );

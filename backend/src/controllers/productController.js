@@ -130,6 +130,22 @@ const createProduct = async (req, res) => {
         .json({ error: 'Name, description, price, and categoryId are required fields.' });
     }
 
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      return res.status(400).json({ error: 'Original price must be a valid non-negative number.' });
+    }
+
+    let parsedDiscountPrice = null;
+    if (discountPrice !== undefined && discountPrice !== null && discountPrice !== '') {
+      parsedDiscountPrice = parseFloat(discountPrice);
+      if (isNaN(parsedDiscountPrice) || parsedDiscountPrice < 0) {
+        return res.status(400).json({ error: 'Discount price must be a valid non-negative number.' });
+      }
+      if (parsedDiscountPrice > parsedPrice) {
+        return res.status(400).json({ error: 'Discount price cannot exceed original price.' });
+      }
+    }
+
     if (images !== undefined && !hasProductImageModel()) {
       return res.status(503).json({
         error:
@@ -145,8 +161,8 @@ const createProduct = async (req, res) => {
         data: {
           name,
           description,
-          price: parseFloat(price),
-          discountPrice: discountPrice ? parseFloat(discountPrice) : null,
+          price: parsedPrice,
+          discountPrice: parsedDiscountPrice,
           oldPrice: oldPrice ? parseFloat(oldPrice) : null,
           image: primaryImage,
           sku: sku || '',
@@ -193,12 +209,38 @@ const updateProduct = async (req, res) => {
       isSale,
     } = req.body;
 
+    const currentProduct = await prisma.product.findUnique({ where: { id } });
+    if (!currentProduct) {
+      return res.status(404).json({ error: 'Product not found.' });
+    }
+
     const data = {};
     if (name) data.name = name;
     if (description) data.description = description;
-    if (price !== undefined) data.price = parseFloat(price);
+
+    let targetPrice = currentProduct.price;
+    if (price !== undefined) {
+      const parsedPrice = parseFloat(price);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        return res.status(400).json({ error: 'Original price must be a valid non-negative number.' });
+      }
+      data.price = parsedPrice;
+      targetPrice = parsedPrice;
+    }
+
     if (discountPrice !== undefined) {
-      data.discountPrice = discountPrice ? parseFloat(discountPrice) : null;
+      if (discountPrice === null || discountPrice === '') {
+        data.discountPrice = null;
+      } else {
+        const parsedDiscount = parseFloat(discountPrice);
+        if (isNaN(parsedDiscount) || parsedDiscount < 0) {
+          return res.status(400).json({ error: 'Discount price must be a valid non-negative number.' });
+        }
+        if (parsedDiscount > targetPrice) {
+          return res.status(400).json({ error: 'Discount price cannot exceed original price.' });
+        }
+        data.discountPrice = parsedDiscount;
+      }
     }
     if (oldPrice !== undefined) data.oldPrice = oldPrice ? parseFloat(oldPrice) : null;
     if (sku !== undefined) data.sku = sku;

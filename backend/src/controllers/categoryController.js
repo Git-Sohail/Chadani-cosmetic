@@ -53,10 +53,26 @@ const updateCategory = async (req, res) => {
 const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
+
+    const productCount = await prisma.product.count({
+      where: { categoryId: id },
+    });
+
+    if (productCount > 0) {
+      return res.status(400).json({
+        error: `Cannot delete this collection: ${productCount} product${productCount === 1 ? '' : 's'} currently belong to it. Reassign or remove those products before deleting this collection.`,
+      });
+    }
+
     await prisma.category.delete({ where: { id } });
     res.json({ message: 'Category deleted successfully.' });
   } catch (error) {
     console.error('Delete category error:', error);
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        error: 'Cannot delete this collection because active products still reference it.',
+      });
+    }
     res.status(500).json({ error: 'Server error deleting category.' });
   }
 };

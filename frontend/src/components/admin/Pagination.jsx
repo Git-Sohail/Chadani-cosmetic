@@ -1,3 +1,4 @@
+import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Pagination({ page, totalPages, onPage }) {
@@ -10,21 +11,27 @@ export default function Pagination({ page, totalPages, onPage }) {
   }
 
   return (
-    <nav aria-label="Pagination" className="flex items-center justify-center gap-1 pt-4">
+    <nav aria-label="Pagination" className="flex items-center justify-center gap-1.5 pt-4">
       <button
         type="button"
         onClick={() => onPage(page - 1)}
         disabled={page === 1}
         aria-label="Previous page"
-        className="p-2 rounded-xl border border-pink-100 text-rose-900 hover:bg-pink-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="p-2 border border-brand-border bg-brand-surface text-brand-dark hover:border-brand-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       >
-        <ChevronLeft className="w-4 h-4" />
+        <ChevronLeft className="w-3.5 h-3.5" />
       </button>
 
       {pages[0] > 1 && (
         <>
-          <button type="button" onClick={() => onPage(1)} className="px-3 py-1.5 rounded-xl text-xs font-black text-rose-900 hover:bg-pink-50 border border-transparent">1</button>
-          {pages[0] > 2 && <span className="text-rose-900/30 text-xs px-1">…</span>}
+          <button
+            type="button"
+            onClick={() => onPage(1)}
+            className="px-3 py-1.5 text-xs font-mono text-brand-dark hover:border-brand-accent border border-brand-border bg-brand-surface transition-colors"
+          >
+            1
+          </button>
+          {pages[0] > 2 && <span className="text-brand-muted text-xs px-1">…</span>}
         </>
       )}
 
@@ -34,10 +41,10 @@ export default function Pagination({ page, totalPages, onPage }) {
           type="button"
           onClick={() => onPage(p)}
           aria-current={p === page ? 'page' : undefined}
-          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-colors border ${
+          className={`px-3 py-1.5 text-xs font-mono transition-colors border ${
             p === page
-              ? 'bg-rose-900 text-white border-rose-900'
-              : 'text-rose-900 hover:bg-pink-50 border-transparent'
+              ? 'bg-brand-dark text-brand-surface border-brand-dark'
+              : 'text-brand-dark border-brand-border bg-brand-surface hover:border-brand-accent'
           }`}
         >
           {p}
@@ -46,8 +53,16 @@ export default function Pagination({ page, totalPages, onPage }) {
 
       {pages[pages.length - 1] < totalPages && (
         <>
-          {pages[pages.length - 1] < totalPages - 1 && <span className="text-rose-900/30 text-xs px-1">…</span>}
-          <button type="button" onClick={() => onPage(totalPages)} className="px-3 py-1.5 rounded-xl text-xs font-black text-rose-900 hover:bg-pink-50 border border-transparent">{totalPages}</button>
+          {pages[pages.length - 1] < totalPages - 1 && (
+            <span className="text-brand-muted text-xs px-1">…</span>
+          )}
+          <button
+            type="button"
+            onClick={() => onPage(totalPages)}
+            className="px-3 py-1.5 text-xs font-mono text-brand-dark hover:border-brand-accent border border-brand-border bg-brand-surface transition-colors"
+          >
+            {totalPages}
+          </button>
         </>
       )}
 
@@ -56,9 +71,9 @@ export default function Pagination({ page, totalPages, onPage }) {
         onClick={() => onPage(page + 1)}
         disabled={page === totalPages}
         aria-label="Next page"
-        className="p-2 rounded-xl border border-pink-100 text-rose-900 hover:bg-pink-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="p-2 border border-brand-border bg-brand-surface text-brand-dark hover:border-brand-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       >
-        <ChevronRight className="w-4 h-4" />
+        <ChevronRight className="w-3.5 h-3.5" />
       </button>
     </nav>
   );
