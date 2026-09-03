@@ -7,6 +7,7 @@ import { useAuth } from '../../../../context/AuthContext';
 import OrderHistoryCard from '../../../../components/orders/OrderHistoryCard';
 import { Package, Loader2, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
+import { useToast } from '../../../../components/Toast';
 
 const FILTERS = [
   { key: 'all', label: 'All Orders' },
@@ -30,6 +31,7 @@ function highlightOrderCard(orderId, setExpandedOrders) {
 
 function AccountOrdersContent() {
   const { token, API_URL } = useAuth();
+  const toast = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
   const highlightOrderId = searchParams.get('orderId');
@@ -83,9 +85,16 @@ function AccountOrdersContent() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       // Update local state with the returned cancelled order
-      setOrders((prev) => prev.map((o) => (o.id === orderId ? res.data : o)));
+      const updatedOrder = res.data?.order || res.data;
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, ...updatedOrder, orderStatus: 'cancelled' } : o))
+      );
+      toast('Order has been successfully cancelled.', 'success');
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to cancel order. Please try again.');
+      console.error('Failed to cancel order:', err);
+      const msg = err.response?.data?.error || 'Failed to cancel order. Please try again.';
+      toast(msg, 'error');
+      throw err;
     }
   };
 

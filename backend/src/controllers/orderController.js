@@ -375,6 +375,8 @@ const cancelMyOrder = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
+    const userEmail = (req.user.email || '').toLowerCase().trim();
+    const isAdminUser = req.user.role === 'admin';
 
     const order = await prisma.order.findUnique({
       where: { id },
@@ -385,29 +387,42 @@ const cancelMyOrder = async (req, res) => {
       return res.status(404).json({ error: 'Order not found.' });
     }
 
-    // Ownership check: Authenticated customer may only cancel their own order
-    if (order.userId !== userId) {
+    // Resilient ownership check: matches by userId, customerEmail, or admin privileges
+    const orderEmail = (order.customerEmail || '').toLowerCase().trim();
+    const isOwner = (order.userId && order.userId === userId) || (orderEmail && orderEmail === userEmail);
+
+    if (!isOwner && !isAdminUser) {
       return res.status(403).json({ error: 'Access denied. You can only cancel your own orders.' });
     }
 
     // Status check: Only pending orders can be cancelled
-    if (order.orderStatus.toLowerCase() !== 'pending') {
+    if ((order.orderStatus || '').toLowerCase() !== 'pending') {
       return res.status(400).json({
         error: `Order cannot be cancelled because its status is "${order.orderStatus}". Only pending orders can be cancelled.`,
       });
     }
 
-    // Atomic transaction: restore product inventory and set status to cancelled
+    // Atomic transaction: restore product inventory safely and set status to cancelled
     const updatedOrder = await prisma.$transaction(async (tx) => {
-      // 1. Restore product stock for each orderItem
+      // 1. Safely restore product stock for each orderItem
       for (const item of order.orderItems) {
         if (item.productId) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: {
-              stock: { increment: item.quantity },
-            },
-          });
+          try {
+            const productExists = await tx.product.findUnique({
+              where: { id: item.productId },
+              select: { id: true },
+            });
+            if (productExists) {
+              await tx.product.update({
+                where: { id: item.productId },
+                data: {
+                  stock: { increment: item.quantity || 1 },
+                },
+              });
+            }
+          } catch (stockErr) {
+            console.warn(`[order cancel] Could not restore stock for productId=${item.productId}:`, stockErr.message);
+          }
         }
       }
 
@@ -423,11 +438,25 @@ const cancelMyOrder = async (req, res) => {
     });
 
     // Notify customer via email asynchronously
-    const targetEmail = updatedOrder.customerEmail || updatedOrder.user?.email;
+    const targetEmail = updatedOrder.customerEmail || updatedOrder.user?.email || userEmail;
     if (targetEmail) {
       sendOrderStatusUpdateEmail(updatedOrder, targetEmail).catch((err) => {
         console.error('Failed to send cancellation update email:', err);
       });
+    }
+
+    // Real-time notification to admin via Socket.IO
+    try {
+      const { getIo } = require('../socket');
+      const io = getIo();
+      if (io) {
+        io.to('admin_room').emit('order_status_updated', {
+          orderId: updatedOrder.id,
+          orderStatus: 'cancelled',
+        });
+      }
+    } catch (sockErr) {
+      // Socket emission failure should never break order response
     }
 
     res.json(formatOrder(updatedOrder));

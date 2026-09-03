@@ -16,6 +16,7 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { formatPrice } from '../../utils/currency';
 import { getOrderStatusLabel, getOrderStatusMessage, getOrderStatusStyles } from '../../utils/orderStatus';
@@ -235,6 +236,7 @@ export default function OrderHistoryCard({
   const isDelivered = order.orderStatus?.toLowerCase() === 'delivered';
   const isPending = order.orderStatus?.toLowerCase() === 'pending';
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // Derive products subtotal from snapshot prices
   const productsSubtotal = items.reduce(
@@ -247,19 +249,18 @@ export default function OrderHistoryCard({
       ? Number(order.totalAmount)
       : (productsSubtotal > 0 ? productsSubtotal + deliveryFee : Number(order.totalAmount));
 
-  const handleCancelClick = async () => {
-    if (
-      !confirm(
-        'Are you sure you want to cancel this pending order? This will release the reserved inventory.'
-      )
-    ) {
-      return;
-    }
+  const handleConfirmCancel = async () => {
     setCancelling(true);
-    if (onCancelOrder) {
-      await onCancelOrder(order.id);
+    try {
+      if (onCancelOrder) {
+        await onCancelOrder(order.id);
+      }
+      setShowCancelModal(false);
+    } catch (err) {
+      // Handled by onCancelOrder toast
+    } finally {
+      setCancelling(false);
     }
-    setCancelling(false);
   };
 
   return (
@@ -506,7 +507,7 @@ export default function OrderHistoryCard({
                 </div>
                 <button
                   type="button"
-                  onClick={handleCancelClick}
+                  onClick={() => setShowCancelModal(true)}
                   disabled={cancelling}
                   className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-red-800 text-white text-xs font-medium uppercase tracking-wider hover:bg-red-900 disabled:opacity-50 transition-colors min-h-[44px] cursor-pointer"
                 >
@@ -517,6 +518,55 @@ export default function OrderHistoryCard({
                   )}
                   <span>Cancel Order</span>
                 </button>
+              </div>
+            )}
+
+            {/* Cancel Confirmation Modal */}
+            {showCancelModal && (
+              <div
+                className="fixed inset-0 z-[200] bg-brand-dark/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn"
+                onClick={() => !cancelling && setShowCancelModal(false)}
+                role="presentation"
+              >
+                <div
+                  className="bg-brand-surface border border-brand-border max-w-md w-full p-6 space-y-4 shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                  role="presentation"
+                >
+                  <div className="flex items-center gap-2.5 text-brand-dark">
+                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-800 shrink-0">
+                      <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-lg font-medium text-brand-dark">Cancel Order?</h3>
+                      <p className="text-[11px] font-mono text-brand-muted">#{order.id.slice(0, 8).toUpperCase()}</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-brand-muted leading-relaxed">
+                    Are you sure you want to cancel this pending order? This action will cancel your Dharan local delivery and return the reserved beauty items to store inventory.
+                  </p>
+
+                  <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-brand-border/60">
+                    <button
+                      type="button"
+                      disabled={cancelling}
+                      onClick={() => setShowCancelModal(false)}
+                      className="px-4 py-2 border border-brand-border text-brand-dark text-xs uppercase tracking-wider font-medium hover:border-brand-accent transition-colors min-h-[40px] cursor-pointer"
+                    >
+                      Keep Order
+                    </button>
+                    <button
+                      type="button"
+                      disabled={cancelling}
+                      onClick={handleConfirmCancel}
+                      className="px-4 py-2 bg-red-800 text-white text-xs uppercase tracking-wider font-medium hover:bg-red-900 disabled:opacity-50 transition-colors min-h-[40px] flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {cancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                      <span>{cancelling ? 'Cancelling...' : 'Confirm Cancellation'}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
