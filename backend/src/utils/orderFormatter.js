@@ -24,6 +24,16 @@ function formatOrderItem(item) {
 
 function formatOrder(order) {
   const items = (order.orderItems || []).map(formatOrderItem);
+  const productsSubtotal = items.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
+  const deliveryFee = 100; // Dharan local delivery is flat NPR 100
+
+  // Authoritative total: Products Subtotal + Rs. 100 Dharan Delivery.
+  // If stored order.totalAmount only equalled productsSubtotal (or was less than subtotal + deliveryFee),
+  // ensure the flat delivery fee is properly included.
+  const authoritativeTotal =
+    order.totalAmount > productsSubtotal
+      ? order.totalAmount
+      : (productsSubtotal > 0 ? productsSubtotal + deliveryFee : order.totalAmount);
 
   return {
     id: order.id,
@@ -35,7 +45,7 @@ function formatOrder(order) {
     phone: order.phone,
     address: order.address,
     deliveryAddress: order.address,
-    city: order.city || null,
+    city: order.city || 'Dharan',
     area: order.area || null,
     postalCode: order.postalCode || null,
     deliveryWard: order.deliveryWard || null,
@@ -47,7 +57,9 @@ function formatOrder(order) {
     paymentMethod: order.paymentMethod,
     orderDate: order.createdAt,
     createdAt: order.createdAt,
-    totalAmount: order.totalAmount,
+    productsSubtotal,
+    deliveryFee,
+    totalAmount: authoritativeTotal,
     orderStatus: order.orderStatus,
     user: order.user,
     orderItems: items,

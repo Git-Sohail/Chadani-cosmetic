@@ -36,7 +36,10 @@ export default function OrderSummaryPanel({ order, statusControl = null }) {
     0
   );
   const deliveryFee = order.deliveryFee ?? 100;
-  const grandTotal = order.totalAmount;
+  const grandTotal =
+    order.totalAmount > calculatedItemsSubtotal
+      ? order.totalAmount
+      : (calculatedItemsSubtotal > 0 ? calculatedItemsSubtotal + deliveryFee : order.totalAmount);
 
   return (
     <div className="bg-brand-surface border border-brand-border p-5 sm:p-7 space-y-6">

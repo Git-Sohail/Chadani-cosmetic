@@ -364,12 +364,25 @@ export default function CheckoutPage() {
               )}
 
               {/* Total Row */}
-              <div className="pt-4 border-t border-brand-border/60 flex justify-between items-baseline">
-                <span className="text-sm font-semibold text-brand-dark">Total Amount Due</span>
-                <span className="font-serif text-2xl font-semibold text-brand-dark">
-                  {formatPrice(placedOrderDetails.totalAmount)}
-                </span>
-              </div>
+              {(() => {
+                const itemsSubtotal = (placedOrderDetails.orderItems || []).reduce(
+                  (sum, item) => sum + (Number(item.subtotal ?? item.price * item.quantity) || 0),
+                  0
+                );
+                const authoritativeTotal =
+                  placedOrderDetails.totalAmount > itemsSubtotal
+                    ? placedOrderDetails.totalAmount
+                    : (itemsSubtotal > 0 ? itemsSubtotal + 100 : placedOrderDetails.totalAmount);
+
+                return (
+                  <div className="pt-4 border-t border-brand-border/60 flex justify-between items-baseline">
+                    <span className="text-sm font-semibold text-brand-dark">Total Amount Due</span>
+                    <span className="font-serif text-2xl font-semibold text-brand-dark">
+                      {formatPrice(authoritativeTotal)}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Next Step Information */}
