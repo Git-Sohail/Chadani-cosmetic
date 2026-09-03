@@ -338,6 +338,31 @@ export default function CheckoutPage() {
                 </div>
               )}
 
+              {/* Order Items Breakdown */}
+              {Array.isArray(placedOrderDetails.orderItems) && placedOrderDetails.orderItems.length > 0 && (
+                <div className="pt-3 border-t border-brand-border/60 space-y-2">
+                  <span className="text-[11px] uppercase tracking-wider text-brand-muted block font-medium">
+                    Order Summary ({placedOrderDetails.orderItems.length} {placedOrderDetails.orderItems.length === 1 ? 'item' : 'items'})
+                  </span>
+                  <div className="space-y-1.5">
+                    {placedOrderDetails.orderItems.map((item) => (
+                      <div key={item.id || item.productId} className="flex justify-between items-center text-xs">
+                        <span className="text-brand-dark truncate max-w-[240px]">
+                          {item.productName || item.name} <span className="text-brand-muted">× {item.quantity}</span>
+                        </span>
+                        <span className="font-mono text-brand-dark">
+                          {formatPrice(item.subtotal || item.price * item.quantity)}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between items-center text-xs text-brand-muted pt-1">
+                      <span>Dharan Delivery</span>
+                      <span className="font-mono text-brand-dark">Rs. 100</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Total Row */}
               <div className="pt-4 border-t border-brand-border/60 flex justify-between items-baseline">
                 <span className="text-sm font-semibold text-brand-dark">Total Amount Due</span>
@@ -355,7 +380,7 @@ export default function CheckoutPage() {
 
           {/* Action Links */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <Link href={`/account/orders?orderId=${placedOrder.id}`} className="flex-1">
+            <Link href={`/account/orders?orderId=${placedOrderDetails.id}`} className="flex-1">
               <Button variant="secondary" size="md" fullWidth className="min-h-[44px]">
                 View Order Details
               </Button>
