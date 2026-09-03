@@ -70,7 +70,7 @@ const sendOtpEmail = async (email, name, otp) => {
     <div style="font-family: 'Playfair Display', 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #fffafb; border: 1px solid #ffe4e6; border-radius: 24px; color: #4c0519;">
       <div style="text-align: center; margin-bottom: 30px;">
         <h1 style="color: #9f1239; font-size: 28px; margin: 0; font-family: Georgia, serif; letter-spacing: 1px;">Chadani Cosmetic</h1>
-        <p style="text-transform: uppercase; font-size: 10px; letter-spacing: 3px; color: #be123c; margin: 5px 0 0 0; font-weight: bold;">Luxury Beauty & Bangles</p>
+        <p style="text-transform: uppercase; font-size: 10px; letter-spacing: 3px; color: #8A6A4B; margin: 5px 0 0 0; font-weight: bold;">Luxury Beauty & Cosmetics Boutique</p>
       </div>
       <div style="background-color: #ffffff; padding: 40px; border-radius: 16px; border: 1px solid #fecdd3; box-shadow: 0 4px 6px -1px rgba(244, 63, 94, 0.05);">
         <h2 style="font-size: 20px; font-weight: 700; color: #881337; margin-top: 0; margin-bottom: 20px;">Welcome, ${name}!</h2>
@@ -106,7 +106,7 @@ const sendWelcomeEmail = async (email, name) => {
     <div style="font-family: 'Playfair Display', 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #fffafb; border: 1px solid #ffe4e6; border-radius: 24px; color: #4c0519;">
       <div style="text-align: center; margin-bottom: 30px;">
         <h1 style="color: #9f1239; font-size: 28px; margin: 0; font-family: Georgia, serif; letter-spacing: 1px;">Chadani Cosmetic</h1>
-        <p style="text-transform: uppercase; font-size: 10px; letter-spacing: 3px; color: #be123c; margin: 5px 0 0 0; font-weight: bold;">Luxury Beauty & Bangles</p>
+        <p style="text-transform: uppercase; font-size: 10px; letter-spacing: 3px; color: #8A6A4B; margin: 5px 0 0 0; font-weight: bold;">Luxury Beauty & Cosmetics Boutique</p>
       </div>
       <div style="background-color: #ffffff; padding: 40px; border-radius: 16px; border: 1px solid #fecdd3; box-shadow: 0 4px 6px -1px rgba(244, 63, 94, 0.05); text-align: center;">
         <h2 style="font-size: 22px; font-weight: 700; color: #881337; margin-top: 0; margin-bottom: 15px;">Your Account is Verified!</h2>
@@ -170,7 +170,7 @@ const sendOrderConfirmationEmail = async (order, customerEmail) => {
     <div style="font-family: 'Playfair Display', 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 40px 20px; background-color: #fffafb; border: 1px solid #ffe4e6; border-radius: 24px; color: #4c0519;">
       <div style="text-align: center; margin-bottom: 30px;">
         <h1 style="color: #9f1239; font-size: 28px; margin: 0; font-family: Georgia, serif; letter-spacing: 1px;">Chadani Cosmetic</h1>
-        <p style="text-transform: uppercase; font-size: 10px; letter-spacing: 3px; color: #be123c; margin: 5px 0 0 0; font-weight: bold;">Luxury Beauty & Bangles</p>
+        <p style="text-transform: uppercase; font-size: 10px; letter-spacing: 3px; color: #8A6A4B; margin: 5px 0 0 0; font-weight: bold;">Luxury Beauty & Cosmetics Boutique</p>
       </div>
       <div style="background-color: #ffffff; padding: 40px; border-radius: 16px; border: 1px solid #fecdd3; box-shadow: 0 4px 6px -1px rgba(244, 63, 94, 0.05);">
         <h2 style="font-size: 20px; font-weight: 700; color: #881337; margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid #fff1f2; padding-bottom: 12px;">Order Confirmed!</h2>
@@ -251,7 +251,7 @@ const sendOrderStatusUpdateEmail = async (order, customerEmail) => {
     <div style="font-family: 'Playfair Display', 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #fffafb; border: 1px solid #ffe4e6; border-radius: 24px; color: #4c0519;">
       <div style="text-align: center; margin-bottom: 30px;">
         <h1 style="color: #9f1239; font-size: 28px; margin: 0; font-family: Georgia, serif; letter-spacing: 1px;">Chadani Cosmetic</h1>
-        <p style="text-transform: uppercase; font-size: 10px; letter-spacing: 3px; color: #be123c; margin: 5px 0 0 0; font-weight: bold;">Luxury Beauty & Bangles</p>
+        <p style="text-transform: uppercase; font-size: 10px; letter-spacing: 3px; color: #8A6A4B; margin: 5px 0 0 0; font-weight: bold;">Luxury Beauty & Cosmetics Boutique</p>
       </div>
       <div style="background-color: #ffffff; padding: 40px; border-radius: 16px; border: 1px solid #fecdd3; box-shadow: 0 4px 6px -1px rgba(244, 63, 94, 0.05); text-align: center;">
         <h2 style="font-size: 20px; font-weight: 700; color: #881337; margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid #fff1f2; padding-bottom: 12px;">Order Status Update</h2>

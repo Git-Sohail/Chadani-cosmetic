@@ -1,156 +1,140 @@
-# Bella & Bangles - Premium Cosmetics & Jewelry Full-Stack Store
+# Chadani Cosmetic — Premium Beauty & Cosmetics Boutique
 
-Bella & Bangles is a premium, fully-responsive eCommerce application designed specifically for organic cosmetics, skincare treatments, traditional bangles, and handpicked luxury jewelry. 
+Chadani Cosmetic is a full-stack eCommerce application designed for curated beauty cosmetics, luxury skincare formulations, and bespoke cosmetic treatments with dedicated local delivery across Dharan.
 
-This project is built using a modern full-stack web architecture, presenting a soft-pink aesthetic, elegant serif/sans typography, sleek transitions, micro-animations, and full-featured customer and administrator portals.
+Built with Next.js 16 (Turbopack), React 19, Tailwind CSS v4, Node.js, Express, Prisma ORM, PostgreSQL, and Socket.IO.
 
 ---
 
 ## Key Features
 
-### 🌸 Customer Experience
-- **Interactive Landing Screen**: Features a curated rose-pink hero section, bestselling category carousels, new collections spotlight, and testimonials.
-- **Dynamic Product Catalog**: Features dynamic query filters (by category, price range, search query) and price sorting options.
-- **Product Details View**: Includes real stock trackers, quantity selectors, and instant wishlist toggles.
-- **Smart Global State (Cart & Wishlist)**: Integrates with backend APIs when authenticated, and falls back to cached `localStorage` states if offline for guest users.
-- **Atomic Checkout**: Checkout orders validated, decrementing database stock counters securely inside database transactions (`prisma.$transaction`), clearing carts automatically.
+### Customer Boutique Experience
+- **Editorial Storefront**: Warm ivory and espresso visual system, curated hero, featured departments, bestselling formulations, and customer reviews.
+- **Dynamic Catalogue**: Filter by collection, search by product name/SKU, and sort by price or availability.
+- **Product Details & Gallery**: High-res image preview, stock badges, structured JSON-LD schema, verified purchase customer reviews, and instant wishlist management.
+- **Cart & Checkout**: Real-time guest cart with authenticated merge, transparent Dharan delivery calculation (flat NPR 100), and Cash on Delivery order completion.
+- **Unified Account Portal**: Single `/account` architecture with dedicated sub-views for orders history (`/account/orders`), wishlist (`/account/wishlist`), and profile settings (`/account/settings`).
+- **Security & Authentication**: Email registration with 6-digit OTP verification, secure Google Sign-in OAuth, and sanitized internal redirect safety.
+- **Live Support Chat**: Real-time customer support powered by Socket.IO.
 
-### 🛡️ Administrative Portal
-- **Admin Authentication**: Full JWT validation protecting endpoints and frontend dashboard views.
-- **Visual Analytics**: Interactive overview boards calculating gross sales, item counters, and active customer bases.
-- **Critical Stock Alarms**: Automatic alerts notifying administrators when product stock dips below 5 items.
-- **Catalogue CRUD Control**: Admin modal interface to easily add, edit, or delete products and categories directly in the UI.
-- **Order Management Logs**: Review checkout orders and modify delivery statuses (`pending`, `confirmed`, `shipped`, `delivered`, `cancelled`).
+### Administrative Commerce Operations
+- **Role-Based Authorization**: Protected `/admin/*` routes enforcing strict backend JWT verification and admin role checking.
+- **Commerce Overview**: Accurately labeled Gross Order Value (product subtotal + NPR 100 delivery), delivered revenue, and real-time inventory shortfalls.
+- **Product & Inventory Management**: Complete CRUD with original vs discount pricing validation (`0 <= discountPrice <= price`), SKU tracking, and multi-image uploads.
+- **Collection Management**: Category organisation with active product dependency checks before deletion.
+- **Fulfillment & Dispatch**: Order details breakdown (subtotal + delivery = total), customer Dharan address, GPS delivery map, and atomic inventory restoration upon order cancellation.
+- **Client Directory**: Manage customer verification statuses with account deactivation safeguards.
 
 ---
 
 ## Technology Stack
 
-- **Frontend**: Next.js 16 (App Router), React 19, Tailwind CSS v4, Lucide React, Axios
-- **Backend**: Node.js, Express.js, Multer
-- **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: JWT (JSON Web Tokens) & BCryptJS
-- **Image Storage**: Cloudinary SDK
+- **Frontend**: Next.js 16, React 19, Tailwind CSS v4, Lucide React, Axios, Socket.IO Client
+- **Backend**: Node.js, Express, Prisma ORM, Multer, Nodemailer, Socket.IO
+- **Database**: PostgreSQL
+- **Authentication**: JWT (JSON Web Tokens) & Google OAuth 2.0
+- **Media Storage**: Cloudinary SDK (with automatic fallback to local storage)
 
 ---
 
-## Folder Structure
+## Project Structure
 
 ```text
-cosmetic-store/
-├── frontend/                # Next.js Frontend
+chadani-cosmetic/
+├── frontend/
 │   ├── src/
-│   │   ├── app/             # Page Router (Home, Shop, Cart, Wishlist, Checkout, Login, Admin)
-│   │   ├── components/      # Shared Design Components (Navbar, Footer, ProductCard, Button)
-│   │   ├── context/         # React Contexts (AuthContext, CartContext, WishlistContext)
-│   │   └── utils/           # Mock data utilities
-│   ├── .env.local           # Local frontend settings
+│   │   ├── app/             # Next.js App Router (Storefront, Shop, Cart, Checkout, Account, Admin)
+│   │   ├── components/      # UI Components (Navbar, Footer, Admin, ProductCard)
+│   │   ├── context/         # Auth, Cart, Wishlist, Chat, and Notification Providers
+│   │   └── utils/           # Currency, pricing, and redirect utilities
+│   ├── .env.example         # Frontend environment template
 │   └── package.json
 │
-└── backend/                 # Express.js Backend
+└── backend/
     ├── prisma/
     │   ├── schema.prisma    # PostgreSQL Schema
-    │   └── seed.js          # Auto-seeder script
+    │   └── seed.js          # Catalog & Admin seeder script
     ├── src/
-    │   ├── controllers/     # Route controller actions
-    │   ├── middleware/      # Auth & role checking middleware
-    │   ├── routes/          # Express route routers
-    │   ├── utils/           # Cloudinary configuration
-    │   ├── db.js            # Prisma connection instantiator
-    │   └── index.js         # Entry server
-    ├── .env                 # Server configuration
+    │   ├── controllers/     # Route controller logic
+    │   ├── middleware/      # Auth, role check, and rate-limiting
+    │   ├── routes/          # API route definitions
+    │   ├── utils/           # Pricing, email, storage, and socket helpers
+    │   └── index.js         # Express & Socket.IO server entry
+    ├── .env.example         # Backend environment template
     └── package.json
 ```
 
 ---
 
-## Setup and Run Instructions
+## Setup & Running Locally
 
-### 📦 Prerequisites
-- **Node.js** (v18.x or later)
-- **NPM** (v9.x or later)
-- **PostgreSQL Database** running locally or in the cloud
+### Prerequisites
+- Node.js (v18.x or later)
+- PostgreSQL running locally or on a cloud provider (e.g. Supabase, Neon)
 
----
+### 1. Backend Setup
 
-### 1. Database & Backend Setup
-
-1. **Navigate to the Backend directory**:
+1. Navigate to `backend/`:
    ```bash
    cd backend
-   ```
-
-2. **Install all server dependencies**:
-   ```bash
    npm install
    ```
 
-3. **Configure Environment Variables**:
-   Create a `.env` file in the `backend/` directory:
+2. Configure environment:
+   Copy `.env.example` to `.env` and fill in your credentials:
    ```env
    PORT=5000
-   DATABASE_URL="postgresql://postgres:password@localhost:5432/cosmetic_store?schema=public"
-   JWT_SECRET="your_custom_jwt_secret_phrase"
-   CLOUDINARY_CLOUD_NAME="your_cloudinary_cloud_name"
-   CLOUDINARY_API_KEY="your_cloudinary_api_key"
-   CLOUDINARY_API_SECRET="your_cloudinary_api_secret"
+   DATABASE_URL="postgresql://user:password@localhost:5432/chadani_db"
+   JWT_SECRET="your-strong-random-jwt-secret"
+   FRONTEND_URL="http://localhost:3000"
    ```
 
-4. **Sync Prisma Schema & Run Database Migrations**:
-   Ensure PostgreSQL is running and credentials are correct, then run:
+3. Run Prisma migrations and seed catalog:
    ```bash
-   npx prisma migrate dev --name init
-   ```
-
-5. **Seed Demo Data**:
-   Populate your database with categories, organic cosmetics, bangle catalogs, and an administrator account:
-   ```bash
+   npx prisma migrate dev
    npx prisma db seed
    ```
 
-6. **Start Backend Server**:
+4. Start development server:
    ```bash
    npm run dev
    ```
-   The backend server will spin up on **`http://localhost:5000`**.
-
----
+   Backend listens on `http://localhost:5000`.
 
 ### 2. Frontend Setup
 
-1. **Open a new terminal and navigate to the Frontend directory**:
+1. Navigate to `frontend/`:
    ```bash
    cd frontend
-   ```
-
-2. **Install all client dependencies**:
-   ```bash
    npm install
    ```
 
-3. **Configure Frontend Environment**:
-   Verify `.env.local` contains the local server url:
+2. Configure environment:
+   Copy `.env.example` to `.env.local`:
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:5000/api
+   NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
+   NEXT_PUBLIC_SITE_URL=http://localhost:3000
    ```
 
-4. **Launch Frontend Development Server**:
+3. Start development server:
    ```bash
    npm run dev
    ```
-   The Next.js frontend will boot on **`http://localhost:3000`**.
+   Storefront is available at `http://localhost:3000`.
 
 ---
 
-## 🔑 Demo Account Credentials
+## Production Deployment Considerations
 
-Use these credentials to sign in and test the application features:
+1. **Security**:
+   - Set a strong, unique `JWT_SECRET` in environment variables.
+   - Configure `ALLOWED_ORIGINS` to restrict CORS to production frontend domains.
+   - Run behind HTTPS / TLS proxy (e.g. Vercel, Render).
 
-### 👤 Administrator Account
-- **Email**: `admin@bellabangles.com`
-- **Password**: `admin123`
-*(Gives access to products CRUD, category creator, status updates, and low-stock alarms).*
+2. **Delivery & Payments**:
+   - Order delivery is flat NPR 100 within Dharan.
+   - Primary payment method is Cash on Delivery.
 
-### 🛍️ Standard Customer Account
-- **Email**: `jane@example.com`
-- **Password**: `customer123`
+3. **Database**:
+   - Execute `npx prisma migrate deploy` in production pipelines to apply schema updates without resetting data.

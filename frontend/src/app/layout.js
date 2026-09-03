@@ -22,9 +22,23 @@ const inter = Inter({
   display: "swap",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
 export const metadata = {
-  title: "Chadani Cosmetic | Premium Beauty & Jewelry Store",
-  description: "Treat your skin with the best organic treatment, professional makeup, and exquisite traditional bangles.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Chadani Cosmetic | Premium Beauty & Cosmetics Boutique",
+    template: "%s | Chadani Cosmetic",
+  },
+  description: "Curated luxury skincare remedies, professional cosmetics, and boutique beauty essentials with reliable flat Rs. 100 delivery across Dharan.",
+  openGraph: {
+    title: "Chadani Cosmetic | Premium Beauty & Cosmetics Boutique",
+    description: "Curated luxury skincare remedies, professional cosmetics, and boutique beauty essentials with reliable flat Rs. 100 delivery across Dharan.",
+    url: siteUrl,
+    siteName: "Chadani Cosmetic",
+    locale: "en_US",
+    type: "website",
+  },
   icons: {
     icon: '/Logo.png',
     apple: '/Logo.png',

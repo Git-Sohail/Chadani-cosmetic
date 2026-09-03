@@ -3,15 +3,9 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import Logo from '../../../components/Logo';
-import { ArrowLeft, MessageSquare, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, ShieldAlert } from 'lucide-react';
 
 function ForgotPasswordContent() {
-  const handleOpenChat = () => {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('chat:open'));
-    }
-  };
-
   return (
     <div className="min-h-[80vh] flex flex-col justify-center py-10 sm:py-16 px-4 sm:px-6">
       <div className="max-w-md w-full mx-auto space-y-6">
@@ -27,11 +21,11 @@ function ForgotPasswordContent() {
             Password Assistance
           </h1>
           <p className="text-xs text-brand-muted max-w-xs mx-auto leading-relaxed">
-            Support and recovery guidance for Chadani Cosmetic clients.
+            Guidance for accessing your Chadani Cosmetic client account.
           </p>
         </div>
 
-        {/* Main Card */}
+        {/* Main Guidance Card */}
         <div className="bg-brand-surface border border-brand-border p-6 sm:p-8 space-y-6">
           <div className="space-y-4 text-center py-2">
             <div className="w-12 h-12 bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center rounded-full mx-auto">
@@ -46,34 +40,26 @@ function ForgotPasswordContent() {
                 Automated self-service password reset is currently unavailable in the customer portal.
               </p>
               <div className="p-3.5 bg-brand-bg border border-brand-border text-left space-y-2 text-xs text-brand-text">
-                <p className="font-medium text-brand-dark">Available options to access your account:</p>
+                <p className="font-medium text-brand-dark">How to access your account:</p>
                 <ul className="list-disc list-inside space-y-1 text-brand-muted pl-1">
                   <li>
-                    If your account was registered using Google, you may sign in directly via <strong>Google Authentication</strong> on the login page.
+                    If your account was registered with Google, you may sign in immediately using <strong>Google Authentication</strong> on the sign-in page.
                   </li>
                   <li>
-                    For manual credential verification, contact our customer desk directly via the in-app support chat.
+                    For manual account assistance, please visit our boutique location in Dharan or contact our management desk during business hours.
                   </li>
                 </ul>
               </div>
             </div>
 
-            <div className="pt-2 flex flex-col sm:flex-row gap-3">
+            <div className="pt-2">
               <Link
                 href="/login"
-                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-brand-dark text-brand-surface text-xs font-medium uppercase tracking-wider hover:bg-brand-accent transition-colors min-h-[44px]"
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-brand-dark text-brand-surface text-xs font-medium uppercase tracking-wider hover:bg-brand-accent transition-colors min-h-[44px]"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Return to Sign In</span>
               </Link>
-              <button
-                type="button"
-                onClick={handleOpenChat}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 border border-brand-border bg-brand-surface hover:border-brand-accent text-xs font-medium uppercase tracking-wider text-brand-dark transition-colors min-h-[44px] cursor-pointer"
-              >
-                <MessageSquare className="w-3.5 h-3.5 text-brand-accent" />
-                <span>Live Support Chat</span>
-              </button>
             </div>
           </div>
 

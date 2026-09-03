@@ -147,8 +147,34 @@ export default function ProductDetails() {
   const pricing = getProductPricing(product);
   const activeImage = galleryImages[activeImageIndex] || product.image;
 
+  const jsonLd = product
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.name,
+        description: product.description,
+        image: galleryImages,
+        sku: product.sku || undefined,
+        offers: {
+          '@type': 'Offer',
+          priceCurrency: 'NPR',
+          price: pricing.activePrice,
+          availability:
+            product.stock > 0
+              ? 'https://schema.org/InStock'
+              : 'https://schema.org/OutOfStock',
+        },
+      }
+    : null;
+
   return (
     <div className="bg-brand-bg min-h-screen">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         {/* Navigation Breadcrumb & Back */}
         <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8 text-xs text-brand-muted">
