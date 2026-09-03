@@ -187,7 +187,7 @@ export default function Navbar() {
 
                 {/* Wishlist */}
                 <Link
-                  href="/wishlist"
+                  href="/account/wishlist"
                   className="relative text-brand-text/75 hover:text-brand-dark p-2 rounded transition-colors"
                   aria-label="Wishlist"
                   title="Wishlist"
@@ -221,9 +221,9 @@ export default function Navbar() {
                     <div className="flex items-center gap-3">
                       {userRole !== 'admin' && (
                         <Link
-                          href="/profile"
+                          href="/account"
                           className="w-8 h-8 rounded-full overflow-hidden border border-brand-border bg-brand-surface text-brand-dark flex items-center justify-center text-xs font-medium shrink-0 hover:border-brand-accent transition-colors"
-                          title="Your profile"
+                          title="Your account"
                         >
                           {resolveImageUrl(user.profileImage) ? (
                             <img
@@ -246,9 +246,9 @@ export default function Navbar() {
                           </Link>
                         ) : (
                           <div className="flex items-center gap-1.5 text-[9px] text-brand-muted tracking-wider uppercase">
-                            <Link href="/profile" className="hover:text-brand-dark">Profile</Link>
+                            <Link href="/account" className="hover:text-brand-dark">Account</Link>
                             <span>&bull;</span>
-                            <Link href="/orders" className="hover:text-brand-dark">Orders</Link>
+                            <Link href="/account/orders" className="hover:text-brand-dark">Orders</Link>
                           </div>
                         )}
                       </div>
@@ -357,7 +357,7 @@ export default function Navbar() {
               <p className="text-[10px] font-semibold text-brand-muted tracking-[0.25em] uppercase">Quick Access</p>
               <div className="grid grid-cols-2 gap-3">
                 <Link
-                  href="/wishlist"
+                  href="/account/wishlist"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2.5 p-3 bg-brand-bg border border-brand-border/60 rounded text-xs text-brand-text hover:border-brand-accent transition-colors"
                 >
@@ -397,18 +397,32 @@ export default function Navbar() {
                     {userRole !== 'admin' && (
                       <div className="flex flex-wrap gap-2 pt-1 border-t border-brand-border/50 text-xs">
                         <Link
-                          href="/profile"
+                          href="/account"
                           onClick={() => setIsOpen(false)}
                           className="px-2.5 py-1 bg-brand-surface border border-brand-border rounded text-[10px] uppercase tracking-wider text-brand-text hover:border-brand-accent"
                         >
-                          Profile
+                          Overview
                         </Link>
                         <Link
-                          href="/orders"
+                          href="/account/orders"
                           onClick={() => setIsOpen(false)}
                           className="px-2.5 py-1 bg-brand-surface border border-brand-border rounded text-[10px] uppercase tracking-wider text-brand-text hover:border-brand-accent"
                         >
                           Orders
+                        </Link>
+                        <Link
+                          href="/account/wishlist"
+                          onClick={() => setIsOpen(false)}
+                          className="px-2.5 py-1 bg-brand-surface border border-brand-border rounded text-[10px] uppercase tracking-wider text-brand-text hover:border-brand-accent"
+                        >
+                          Wishlist
+                        </Link>
+                        <Link
+                          href="/account/settings"
+                          onClick={() => setIsOpen(false)}
+                          className="px-2.5 py-1 bg-brand-surface border border-brand-border rounded text-[10px] uppercase tracking-wider text-brand-text hover:border-brand-accent"
+                        >
+                          Settings
                         </Link>
                         <button
                           type="button"

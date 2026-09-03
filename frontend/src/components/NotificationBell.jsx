@@ -20,18 +20,18 @@ export default function NotificationBell() {
 
     if (notification.orderId) {
       const orderId = notification.orderId;
-      if (pathname === '/orders') {
+      if (pathname === '/account/orders') {
         window.dispatchEvent(
           new CustomEvent('orders:highlight', { detail: { orderId } })
         );
-        router.replace(`/orders?orderId=${encodeURIComponent(orderId)}`);
+        router.replace(`/account/orders?orderId=${encodeURIComponent(orderId)}`);
       } else {
-        router.push(`/orders?orderId=${encodeURIComponent(orderId)}`);
+        router.push(`/account/orders?orderId=${encodeURIComponent(orderId)}`);
       }
       return;
     }
 
-    router.push('/orders');
+    router.push('/account/orders');
   };
 
   useEffect(() => {
@@ -123,11 +123,11 @@ export default function NotificationBell() {
             )}
           </div>
 
-          <div className="p-3 border-t border-pink-50 bg-pink-50/20">
+          <div className="p-3 border-t border-brand-border bg-brand-bg/50">
             <Link
-              href="/orders"
+              href="/account/orders"
               onClick={() => setOpen(false)}
-              className="block text-center text-[10px] font-black uppercase tracking-widest text-rose-800 hover:text-rose-950"
+              className="block text-center text-[10px] font-medium uppercase tracking-widest text-brand-dark hover:text-brand-accent transition-colors"
             >
               View all orders
             </Link>

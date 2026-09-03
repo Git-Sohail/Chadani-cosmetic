@@ -62,13 +62,13 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2.5 text-xs text-brand-muted">
               <li>
-                <Link href="/orders" className="hover:text-brand-dark transition-colors">Track Orders</Link>
+                <Link href="/account/orders" className="hover:text-brand-dark transition-colors">Track Orders</Link>
               </li>
               <li>
                 <Link href="/cart" className="hover:text-brand-dark transition-colors">Shopping Bag</Link>
               </li>
               <li>
-                <Link href="/wishlist" className="hover:text-brand-dark transition-colors">Saved Wishlist</Link>
+                <Link href="/account/wishlist" className="hover:text-brand-dark transition-colors">Saved Wishlist</Link>
               </li>
               <li>
                 <button

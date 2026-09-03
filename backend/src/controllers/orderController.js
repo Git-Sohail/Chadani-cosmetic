@@ -323,6 +323,73 @@ const deleteOrder = async (req, res) => {
   }
 };
 
+// Customer — cancel pending order
+const cancelMyOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { orderItems: true },
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    // Ownership check: Authenticated customer may only cancel their own order
+    if (order.userId !== userId) {
+      return res.status(403).json({ error: 'Access denied. You can only cancel your own orders.' });
+    }
+
+    // Status check: Only pending orders can be cancelled
+    if (order.orderStatus.toLowerCase() !== 'pending') {
+      return res.status(400).json({
+        error: `Order cannot be cancelled because its status is "${order.orderStatus}". Only pending orders can be cancelled.`,
+      });
+    }
+
+    // Atomic transaction: restore product inventory and set status to cancelled
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      // 1. Restore product stock for each orderItem
+      for (const item of order.orderItems) {
+        if (item.productId) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: { increment: item.quantity },
+            },
+          });
+        }
+      }
+
+      // 2. Mark order status as cancelled
+      return await tx.order.update({
+        where: { id },
+        data: { orderStatus: 'cancelled' },
+        include: {
+          orderItems: true,
+          user: { select: { name: true, email: true } },
+        },
+      });
+    });
+
+    // Notify customer via email asynchronously
+    const targetEmail = updatedOrder.customerEmail || updatedOrder.user?.email;
+    if (targetEmail) {
+      sendOrderStatusUpdateEmail(updatedOrder, targetEmail).catch((err) => {
+        console.error('Failed to send cancellation update email:', err);
+      });
+    }
+
+    res.json(formatOrder(updatedOrder));
+  } catch (error) {
+    console.error('Customer cancel order error:', error);
+    res.status(500).json({ error: error.message || 'Server error cancelling order.' });
+  }
+};
+
 module.exports = {
   placeOrder,
   getMyOrders,
@@ -332,4 +399,5 @@ module.exports = {
   getNewOrderCount,
   resetNewOrderCount,
   deleteOrder,
+  cancelMyOrder,
 };

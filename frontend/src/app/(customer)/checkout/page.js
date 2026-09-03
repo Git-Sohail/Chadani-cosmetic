@@ -355,9 +355,9 @@ export default function CheckoutPage() {
 
           {/* Action Links */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <Link href="/orders" className="flex-1">
+            <Link href={`/account/orders?orderId=${placedOrder.id}`} className="flex-1">
               <Button variant="secondary" size="md" fullWidth className="min-h-[44px]">
-                View Order History
+                View Order Details
               </Button>
             </Link>
             <Link href="/shop" className="flex-1">

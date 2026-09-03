@@ -2,11 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useWishlist } from '../../../../context/WishlistContext';
 import { useCart } from '../../../../context/CartContext';
 import { useToast } from '../../../../components/Toast';
-import { Heart, ShoppingCart, Trash2, Loader2 } from 'lucide-react';
-import { formatPrice } from '../../../../utils/currency';
+import { Heart, ShoppingBag, Trash2, Loader2, ArrowLeft } from 'lucide-react';
+import { formatPrice, getProductPricing } from '../../../../utils/currency';
 
 export default function AccountWishlistPage() {
   const { wishlistItems, loading, removeFromWishlist } = useWishlist();
@@ -14,63 +15,138 @@ export default function AccountWishlistPage() {
   const toast = useToast();
 
   const handleMoveToCart = async (item) => {
+    if (!item.product) return;
     await addToCart(item.product, 1);
-    toast(`"${item.product.name}" added to cart`, 'success');
+    toast(`"${item.product.name}" added to your shopping bag`, 'success');
   };
 
   const handleRemove = async (productId) => {
     await removeFromWishlist(productId);
-    toast('Removed from wishlist', 'info');
+    toast('Item removed from wishlist', 'info');
   };
 
   return (
-    <div className="space-y-5">
-      <div className="bg-white rounded-[1.5rem] border border-pink-100 p-6 shadow-sm">
-        <h1 className="text-2xl font-serif font-black text-rose-950 flex items-center gap-2">
-          <Heart className="w-6 h-6 text-[#7A003C] fill-[#7A003C]" /> Wishlist
-        </h1>
-        <p className="text-xs text-rose-900/50 font-medium mt-1">{wishlistItems.length} saved items</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-brand-surface border border-brand-border p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-brand-accent block mb-1">
+              Curated Collection
+            </span>
+            <h1 className="font-serif text-2xl sm:text-3xl text-brand-dark font-normal">
+              My Wishlist
+            </h1>
+          </div>
+          <span className="text-xs text-brand-muted font-mono">
+            {wishlistItems.length} {wishlistItems.length === 1 ? 'saved item' : 'saved items'}
+          </span>
+        </div>
+        <p className="text-xs sm:text-sm text-brand-muted mt-2 max-w-xl leading-relaxed">
+          Your saved cosmetics, skincare remedies, and traditional accessories for future shopping in Dharan.
+        </p>
       </div>
 
+      {/* Content */}
       {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-rose-300" /></div>
+        <div className="flex flex-col justify-center items-center py-20 text-brand-muted gap-2 bg-brand-surface border border-brand-border">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-accent" />
+          <span className="text-xs font-mono uppercase tracking-widest">Loading wishlist...</span>
+        </div>
       ) : wishlistItems.length === 0 ? (
-        <div className="bg-white rounded-[1.5rem] border border-pink-100 p-12 text-center shadow-sm">
-          <Heart className="w-12 h-12 text-rose-200 mx-auto mb-4" />
-          <p className="font-black text-rose-950">Your wishlist is empty</p>
-          <p className="text-xs text-rose-900/50 font-medium mt-2">Save products you love for later</p>
-          <Link href="/shop" className="inline-block mt-5 px-6 py-2.5 bg-[#7A003C] text-white text-xs font-black uppercase tracking-wider rounded-xl hover:bg-[#5a002c] transition-colors">
-            Explore Shop
-          </Link>
+        <div className="bg-brand-surface border border-brand-border p-12 text-center space-y-4">
+          <Heart className="w-10 h-10 text-brand-muted/40 mx-auto" />
+          <h2 className="font-serif text-xl text-brand-dark">Your wishlist is empty</h2>
+          <p className="text-xs text-brand-muted max-w-sm mx-auto leading-relaxed">
+            Save your favorite beauty and traditional items while browsing our collections.
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/shop"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-brand-dark text-brand-surface text-xs font-medium uppercase tracking-wider hover:bg-brand-accent transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Explore Collection</span>
+            </Link>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {wishlistItems.map((item) => {
             const product = item.product;
             if (!product) return null;
+            const pricing = getProductPricing(product);
+
             return (
-              <div key={product.id} className="bg-white rounded-[1.5rem] border border-pink-100 p-4 shadow-sm flex gap-4">
-                <Link href={`/shop/${product.id}`} className="w-20 h-20 rounded-xl overflow-hidden bg-pink-50 border border-pink-100 shrink-0">
-                  {product.image
-                    ? <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-rose-200"><Heart className="w-6 h-6" /></div>}
-                </Link>
-                <div className="flex-1 min-w-0 space-y-2">
-                  <Link href={`/shop/${product.id}`} className="block font-bold text-sm text-rose-950 line-clamp-2 hover:text-[#7A003C] transition-colors">
-                    {product.name}
+              <div
+                key={product.id}
+                className="bg-brand-surface border border-brand-border p-4 flex flex-col justify-between group hover:border-brand-accent transition-colors"
+              >
+                <div>
+                  {/* Portrait Thumbnail */}
+                  <Link
+                    href={`/shop/${product.id}`}
+                    className="relative block aspect-[4/5] bg-brand-bg border border-brand-border overflow-hidden mb-3.5"
+                  >
+                    {product.image ? (
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-serif text-xs text-brand-muted/40 italic p-3 text-center">
+                        {product.category?.name || 'Product'}
+                      </div>
+                    )}
                   </Link>
-                  <p className="font-black text-[#7A003C]">{formatPrice(product.discountPrice || product.price)}</p>
-                  <div className="flex gap-2 pt-1">
-                    <button type="button" onClick={() => handleMoveToCart(item)}
-                      disabled={product.stock <= 0}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7A003C] text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-[#5a002c] disabled:opacity-40 transition-colors">
-                      <ShoppingCart className="w-3.5 h-3.5" /> Add to Cart
-                    </button>
-                    <button type="button" onClick={() => handleRemove(product.id)}
-                      className="p-1.5 rounded-lg border border-pink-100 text-rose-400 hover:bg-red-50 hover:text-red-500 transition-colors">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+
+                  {/* Product Details */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase tracking-wider text-brand-accent block">
+                      {product.category?.name || 'Cosmetics'}
+                    </span>
+                    <Link
+                      href={`/shop/${product.id}`}
+                      className="font-serif text-sm sm:text-base text-brand-dark hover:text-brand-accent transition-colors line-clamp-1 block"
+                    >
+                      {product.name}
+                    </Link>
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <span className="text-xs sm:text-sm font-medium text-brand-dark">
+                        {formatPrice(pricing.activePrice)}
+                      </span>
+                      {pricing.oldPrice && (
+                        <span className="text-xs text-brand-muted/60 line-through">
+                          {formatPrice(pricing.oldPrice)}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                </div>
+
+                {/* Actions */}
+                <div className="pt-4 mt-4 border-t border-brand-border/60 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleMoveToCart(item)}
+                    disabled={product.stock <= 0}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-brand-dark text-brand-surface text-xs font-medium uppercase tracking-wider hover:bg-brand-accent disabled:opacity-40 transition-colors cursor-pointer min-h-[44px]"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    <span>{product.stock <= 0 ? 'Out of Stock' : 'Add to Bag'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(product.id)}
+                    className="p-2.5 border border-brand-border bg-brand-surface text-brand-muted hover:text-red-700 hover:border-red-200 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+                    aria-label={`Remove ${product.name} from wishlist`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             );

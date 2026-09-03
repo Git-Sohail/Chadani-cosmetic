@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../../context/AuthContext';
+import OrderHistoryCard from '../../../../components/orders/OrderHistoryCard';
+import { Package, Loader2, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
-import { Package, Loader2, ChevronRight } from 'lucide-react';
-import { formatPrice } from '../../../../utils/currency';
-import { getOrderStatusStyles, getOrderStatusLabel } from '../../../../utils/orderStatus';
 
 const FILTERS = [
   { key: 'all', label: 'All Orders' },
@@ -17,11 +17,30 @@ const FILTERS = [
   { key: 'cancelled', label: 'Cancelled' },
 ];
 
-export default function AccountOrdersPage() {
+function highlightOrderCard(orderId, setExpandedOrders) {
+  if (!orderId) return;
+  setExpandedOrders((prev) => ({ ...prev, [orderId]: true }));
+  requestAnimationFrame(() => {
+    document.getElementById(`order-${orderId}`)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  });
+}
+
+function AccountOrdersContent() {
   const { token, API_URL } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const highlightOrderId = searchParams.get('orderId');
+  const highlightedRef = useRef(null);
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
+  const [error, setError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [expandedOrders, setExpandedOrders] = useState({});
+  const [previewImage, setPreviewImage] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     if (!token) return;
@@ -31,100 +50,193 @@ export default function AccountOrdersPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setOrders(res.data);
-    } catch { /* silent */ }
-    finally { setLoading(false); }
+    } catch (err) {
+      console.error('Error fetching customer orders:', err);
+      setError('Could not retrieve your order history. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, [API_URL, token]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
-  const filtered = filter === 'all' ? orders : orders.filter((o) => o.orderStatus === filter);
+  const toggleExpand = (orderId) => {
+    setExpandedOrders((prev) => ({ ...prev, [orderId]: !prev[orderId] }));
+  };
+
+  useEffect(() => {
+    if (!loading && highlightOrderId && orders.some((o) => o.id === highlightOrderId)) {
+      if (highlightedRef.current !== highlightOrderId) {
+        highlightedRef.current = highlightOrderId;
+        highlightOrderCard(highlightOrderId, setExpandedOrders);
+      }
+    }
+  }, [loading, highlightOrderId, orders]);
+
+  const handleCancelOrder = async (orderId) => {
+    try {
+      const res = await axios.put(
+        `${API_URL}/orders/${orderId}/cancel`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // Update local state with the returned cancelled order
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? res.data : o)));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to cancel order. Please try again.');
+    }
+  };
+
+  const filteredOrders =
+    statusFilter === 'all'
+      ? orders
+      : orders.filter((o) => o.orderStatus?.toLowerCase() === statusFilter);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      {/* Lightbox Zoom Preview Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[200] bg-brand-dark/80 backdrop-blur-xs flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setPreviewImage(null)}
+          role="presentation"
+        >
+          <div
+            className="relative max-w-lg bg-brand-surface p-2 border border-brand-border"
+            onClick={(e) => e.stopPropagation()}
+            role="presentation"
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-3 right-3 z-10 p-2 bg-brand-dark text-brand-surface hover:bg-brand-accent transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center text-xs uppercase"
+              aria-label="Close preview"
+            >
+              &times;
+            </button>
+            <img
+              src={previewImage}
+              alt="Product item preview"
+              className="max-w-full max-h-[75vh] object-contain"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="bg-white rounded-[1.5rem] border border-pink-100 p-6 shadow-sm">
-        <h1 className="text-2xl font-serif font-black text-rose-950 flex items-center gap-2">
-          <Package className="w-6 h-6 text-[#7A003C]" /> My Orders
-        </h1>
-        <p className="text-xs text-rose-900/50 font-medium mt-1">{orders.length} orders total</p>
+      <div className="bg-brand-surface border border-brand-border p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-brand-accent block mb-1">
+              Order History
+            </span>
+            <h1 className="font-serif text-2xl sm:text-3xl text-brand-dark font-normal">
+              My Orders
+            </h1>
+          </div>
+          <span className="text-xs text-brand-muted font-mono">
+            {orders.length} {orders.length === 1 ? 'order' : 'orders'} placed in total
+          </span>
+        </div>
+        <p className="text-xs sm:text-sm text-brand-muted mt-2 max-w-2xl leading-relaxed">
+          Review dispatch status across Dharan, inspect historical line-item snapshots, or review received items.
+        </p>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map(({ key, label }) => (
-          <button key={key} type="button" onClick={() => setFilter(key)}
-            className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border transition-colors ${
-              filter === key ? 'bg-[#7A003C] text-white border-[#7A003C]' : 'bg-white text-rose-900/60 border-pink-100 hover:border-rose-300'
-            }`}>
-            {label}
-          </button>
-        ))}
+      {/* Filter Tabs */}
+      <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-none">
+        {FILTERS.map(({ key, label }) => {
+          const active = statusFilter === key;
+          const count =
+            key === 'all'
+              ? orders.length
+              : orders.filter((o) => o.orderStatus?.toLowerCase() === key).length;
+
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setStatusFilter(key)}
+              className={`px-3.5 py-2 text-xs font-medium uppercase tracking-wider whitespace-nowrap transition-colors min-h-[44px] border cursor-pointer ${
+                active
+                  ? 'bg-brand-dark text-brand-surface border-brand-dark'
+                  : 'bg-brand-surface text-brand-muted border-brand-border hover:text-brand-dark'
+              }`}
+            >
+              {label} ({count})
+            </button>
+          );
+        })}
       </div>
 
-      {/* Order list */}
+      {/* Content Area */}
       {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-rose-300" /></div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-[1.5rem] border border-pink-100 p-12 text-center shadow-sm">
-          <Package className="w-12 h-12 text-rose-200 mx-auto mb-4" />
-          <p className="font-black text-rose-950">No orders found</p>
-          <Link href="/shop" className="inline-block mt-5 px-6 py-2.5 bg-[#7A003C] text-white text-xs font-black uppercase tracking-wider rounded-xl hover:bg-[#5a002c] transition-colors">
-            Start Shopping
-          </Link>
+        <div className="flex flex-col justify-center items-center py-20 text-brand-muted gap-2 bg-brand-surface border border-brand-border">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-accent" />
+          <span className="text-xs font-mono uppercase tracking-widest">Loading order history...</span>
+        </div>
+      ) : error ? (
+        <div className="p-8 text-center bg-brand-surface border border-red-200 text-red-800 space-y-3">
+          <p className="font-serif text-base">{error}</p>
+          <button
+            type="button"
+            onClick={fetchOrders}
+            className="px-4 py-2 bg-brand-dark text-brand-surface text-xs uppercase tracking-wider cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="bg-brand-surface border border-brand-border p-12 text-center space-y-4">
+          <Package className="w-10 h-10 text-brand-muted/40 mx-auto" />
+          <h2 className="font-serif text-xl text-brand-dark">No orders found</h2>
+          <p className="text-xs text-brand-muted max-w-sm mx-auto leading-relaxed">
+            {statusFilter === 'all'
+              ? 'You have not placed any orders yet. Discover our collection of traditional bangles and beauty products.'
+              : `No orders currently match status "${statusFilter}".`}
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/shop"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-brand-dark text-brand-surface text-xs font-medium uppercase tracking-wider hover:bg-brand-accent transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Explore Collection</span>
+            </Link>
+          </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((order) => {
-            const items = order.orderItems || order.products || [];
-            return (
-              <div key={order.id} className="bg-white rounded-[1.5rem] border border-pink-100 p-5 shadow-sm hover:shadow-md transition-all">
-                {/* Order meta */}
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-pink-50">
-                  <div>
-                    <p className="text-[10px] font-black text-rose-900/40 uppercase tracking-widest">Order ID</p>
-                    <p className="font-mono font-black text-sm text-rose-950">#{order.id.slice(0, 8).toUpperCase()}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-rose-900/40 uppercase tracking-widest">Date</p>
-                    <p className="text-xs font-bold text-rose-950">{new Date(order.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-rose-900/40 uppercase tracking-widest">Total</p>
-                    <p className="text-sm font-black text-[#7A003C]">{formatPrice(order.totalAmount)}</p>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${getOrderStatusStyles(order.orderStatus)}`}>
-                    {getOrderStatusLabel(order.orderStatus)}
-                  </span>
-                </div>
-
-                {/* Product thumbnails */}
-                <div className="flex flex-wrap gap-3 items-center">
-                  {items.slice(0, 4).map((item) => (
-                    <div key={item.id} className="flex items-center gap-2.5">
-                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-pink-50 border border-pink-100 shrink-0">
-                        {item.productImage
-                          ? <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
-                          : <div className="w-full h-full flex items-center justify-center"><Package className="w-4 h-4 text-rose-200" /></div>}
-                      </div>
-                      <div className="max-w-[120px]">
-                        <p className="text-[11px] font-bold text-rose-950 line-clamp-1">{item.productName}</p>
-                        <p className="text-[9px] text-rose-900/40 font-semibold">×{item.quantity} · {formatPrice(item.price)}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {items.length > 4 && (
-                    <span className="text-[10px] font-black text-rose-400">+{items.length - 4} more</span>
-                  )}
-                  <Link href={`/orders?orderId=${order.id}`}
-                    className="ml-auto flex items-center gap-1.5 px-4 py-2 border border-pink-100 rounded-xl text-[10px] font-black uppercase tracking-wider text-rose-900 hover:bg-pink-50 transition-colors shrink-0">
-                    View Details <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
+        <div className="space-y-4">
+          {filteredOrders.map((order) => (
+            <OrderHistoryCard
+              key={order.id}
+              order={order}
+              isExpanded={!!expandedOrders[order.id]}
+              isHighlighted={highlightOrderId === order.id}
+              onToggle={() => toggleExpand(order.id)}
+              onPreviewImage={setPreviewImage}
+              onCancelOrder={handleCancelOrder}
+            />
+          ))}
         </div>
       )}
     </div>
+  );
+}
+
+export default function AccountOrdersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[50vh] flex flex-col justify-center items-center gap-3 text-brand-muted">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-accent" />
+          <span className="text-xs font-mono uppercase tracking-widest">Loading orders...</span>
+        </div>
+      }
+    >
+      <AccountOrdersContent />
+    </Suspense>
   );
 }

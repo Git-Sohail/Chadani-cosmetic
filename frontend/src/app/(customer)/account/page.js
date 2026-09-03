@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '../../../context/AuthContext';
 import { useWishlist } from '../../../context/WishlistContext';
 import axios from 'axios';
-import { Package, Heart, ShoppingBag, ChevronRight, Loader2 } from 'lucide-react';
+import { Package, Heart, ShoppingBag, ChevronRight, Loader2, ArrowRight } from 'lucide-react';
 import { formatPrice } from '../../../utils/currency';
 import { getOrderStatusStyles, getOrderStatusLabel } from '../../../utils/orderStatus';
 
@@ -23,109 +24,224 @@ export default function AccountDashboardPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setOrders(res.data);
-    } catch { /* silent */ }
-    finally { setLoading(false); }
+    } catch {
+      // Graceful fallback
+    } finally {
+      setLoading(false);
+    }
   }, [API_URL, token]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
-  const activeOrders = orders.filter((o) => !['delivered', 'cancelled'].includes(o.orderStatus));
+  const activeOrders = orders.filter((o) => !['delivered', 'cancelled'].includes(o.orderStatus?.toLowerCase()));
   const recentOrders = orders.slice(0, 3);
 
   const stats = [
-    { label: 'Total Orders', value: orders.length, icon: Package, href: '/account/orders', color: 'bg-rose-50 text-[#7A003C]' },
-    { label: 'Active Orders', value: activeOrders.length, icon: ShoppingBag, href: '/account/orders', color: 'bg-amber-50 text-amber-700' },
-    { label: 'Wishlist Items', value: wishlistItems.length, icon: Heart, href: '/account/wishlist', color: 'bg-pink-50 text-pink-700' },
+    {
+      label: 'Total Orders',
+      value: orders.length,
+      icon: Package,
+      href: '/account/orders',
+      caption: 'Lifetime order count',
+    },
+    {
+      label: 'Active Dispatches',
+      value: activeOrders.length,
+      icon: ShoppingBag,
+      href: '/account/orders',
+      caption: 'In-progress deliveries',
+    },
+    {
+      label: 'Saved in Wishlist',
+      value: wishlistItems.length,
+      icon: Heart,
+      href: '/account/wishlist',
+      caption: 'Curated beauty items',
+    },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-[1.5rem] border border-pink-100 p-6 shadow-sm">
-        <h1 className="text-2xl font-serif font-black text-rose-950">
-          Hello, {user?.name?.split(' ')[0]} 👋
+    <div className="space-y-6 sm:space-y-8">
+      {/* Editorial Welcome Header */}
+      <div className="bg-brand-surface border border-brand-border p-6 sm:p-8">
+        <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-brand-accent block mb-1">
+          Account Overview
+        </span>
+        <h1 className="font-serif text-2xl sm:text-3xl text-brand-dark font-normal">
+          Welcome back, {user?.name?.split(' ')[0] || 'Customer'}
         </h1>
-        <p className="text-sm text-rose-900/50 font-medium mt-1">
-          Welcome back to Chadani Cosmetic
+        <p className="text-xs sm:text-sm text-brand-muted mt-1.5 leading-relaxed max-w-xl">
+          Track your orders in Dharan, manage your account details, and view your curated beauty wishlist.
         </p>
       </div>
 
-      {/* Stats cards */}
+      {/* Summary Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {stats.map(({ label, value, icon: Icon, href, color }) => (
-          <Link key={label} href={href}
-            className="bg-white rounded-[1.5rem] border border-pink-100 p-5 shadow-sm hover:shadow-md transition-all group">
-            <div className="flex items-center justify-between">
-              <div className={`p-3 rounded-xl ${color}`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <ChevronRight className="w-4 h-4 text-rose-300 group-hover:text-rose-700 transition-colors" />
+        {stats.map(({ label, value, icon: Icon, href, caption }) => (
+          <Link
+            key={label}
+            href={href}
+            className="bg-brand-surface border border-brand-border p-5 hover:border-brand-accent transition-colors group flex flex-col justify-between min-h-[120px]"
+          >
+            <div className="flex items-center justify-between text-brand-muted">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-brand-muted block">
+                {label}
+              </span>
+              <Icon className="w-4 h-4 text-brand-accent" />
             </div>
-            <p className="text-3xl font-black text-rose-950 mt-3">{value}</p>
-            <p className="text-xs font-bold text-rose-900/50 uppercase tracking-wider mt-1">{label}</p>
+            <div>
+              <p className="font-serif text-3xl font-normal text-brand-dark mt-2">{value}</p>
+              <p className="text-[10px] text-brand-muted mt-0.5">{caption}</p>
+            </div>
           </Link>
         ))}
       </div>
 
-      {/* Recent orders */}
-      <div className="bg-white rounded-[1.5rem] border border-pink-100 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-pink-50">
-          <h2 className="font-black text-rose-950 text-sm uppercase tracking-widest">Recent Orders</h2>
-          <Link href="/account/orders" className="text-[10px] font-black text-[#7A003C] uppercase tracking-wider hover:underline">
-            View all
+      {/* Recent Orders Section */}
+      <div className="bg-brand-surface border border-brand-border overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border/60">
+          <div>
+            <h2 className="font-serif text-base text-brand-dark font-medium">Recent Orders</h2>
+            <span className="text-[10px] text-brand-muted">Latest purchases for delivery in Dharan</span>
+          </div>
+          <Link
+            href="/account/orders"
+            className="text-xs uppercase tracking-wider text-brand-muted hover:text-brand-dark transition-colors inline-flex items-center gap-1"
+          >
+            <span>View All</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-rose-300" />
+          <div className="flex flex-col justify-center items-center py-16 text-brand-muted gap-2">
+            <Loader2 className="w-6 h-6 animate-spin text-brand-accent" />
+            <span className="text-xs font-mono uppercase tracking-widest">Loading orders...</span>
           </div>
         ) : recentOrders.length === 0 ? (
-          <div className="text-center py-12 px-6">
-            <Package className="w-10 h-10 text-rose-200 mx-auto mb-3" />
-            <p className="text-sm font-bold text-rose-950/50">No orders yet</p>
-            <Link href="/shop" className="inline-block mt-4 px-5 py-2 bg-[#7A003C] text-white text-xs font-black uppercase tracking-wider rounded-xl hover:bg-[#5a002c] transition-colors">
-              Shop Now
-            </Link>
+          <div className="text-center py-14 px-6 space-y-3">
+            <Package className="w-8 h-8 text-brand-muted/40 mx-auto" />
+            <h3 className="font-serif text-base text-brand-dark">No orders placed yet</h3>
+            <p className="text-xs text-brand-muted max-w-sm mx-auto leading-relaxed">
+              Explore our catalogue of premium traditional bangles, skincare remedies, and beauty essentials.
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/shop"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-dark text-brand-surface text-xs font-medium uppercase tracking-wider hover:bg-brand-accent transition-colors"
+              >
+                <span>Browse Catalogue</span>
+              </Link>
+            </div>
           </div>
         ) : (
-          <div className="divide-y divide-pink-50">
+          <div className="divide-y divide-brand-border/60">
             {recentOrders.map((order) => {
               const firstItem = order.orderItems?.[0] || order.products?.[0];
+              const totalItemCount = order.orderItems?.length || order.products?.length || 1;
+
               return (
-                <div key={order.id} className="flex items-center gap-4 px-6 py-4 hover:bg-pink-50/30 transition-colors">
-                  {/* Product image */}
-                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-pink-50 border border-pink-100 shrink-0">
-                    {firstItem?.productImage
-                      ? <img src={firstItem.productImage} alt="" className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center"><Package className="w-5 h-5 text-rose-200" /></div>}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-black text-rose-950 truncate">
-                      {firstItem?.productName || 'Order'}
-                      {(order.orderItems?.length || order.products?.length) > 1 && (
-                        <span className="text-rose-400 font-semibold"> +{(order.orderItems?.length || order.products?.length) - 1} more</span>
+                <div
+                  key={order.id}
+                  className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-brand-bg/40 transition-colors"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    {/* Thumbnail */}
+                    <div className="relative w-14 aspect-[4/5] bg-brand-bg border border-brand-border overflow-hidden shrink-0">
+                      {firstItem?.productImage ? (
+                        <Image
+                          src={firstItem.productImage}
+                          alt=""
+                          fill
+                          sizes="56px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-serif text-[10px] text-brand-muted/50 italic">
+                          Item
+                        </div>
                       )}
-                    </p>
-                    <p className="text-[10px] text-rose-900/40 font-semibold mt-0.5">
-                      #{order.id.slice(0, 8).toUpperCase()} · {new Date(order.createdAt).toLocaleDateString()}
-                    </p>
+                    </div>
+
+                    <div className="min-w-0 space-y-0.5">
+                      <p className="font-serif text-sm sm:text-base text-brand-dark truncate">
+                        {firstItem?.productName || 'Cosmetics Order'}
+                        {totalItemCount > 1 && (
+                          <span className="text-xs text-brand-muted font-sans font-normal ml-1">
+                            +{totalItemCount - 1} more
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-brand-muted font-mono">
+                        #{order.id.slice(0, 8).toUpperCase()} &bull;{' '}
+                        {new Date(order.createdAt).toLocaleDateString(undefined, {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0 space-y-1">
-                    <p className="text-sm font-black text-rose-950">{formatPrice(order.totalAmount)}</p>
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${getOrderStatusStyles(order.orderStatus)}`}>
-                      {getOrderStatusLabel(order.orderStatus)}
-                    </span>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-5 pt-2 sm:pt-0 border-t sm:border-t-0 border-brand-border/40">
+                    <div className="text-left sm:text-right space-y-1">
+                      <p className="font-medium text-sm text-brand-dark">
+                        {formatPrice(order.totalAmount)}
+                      </p>
+                      <span
+                        className={`inline-block px-2.5 py-0.5 text-[9px] uppercase tracking-wider font-semibold border ${getOrderStatusStyles(
+                          order.orderStatus
+                        )}`}
+                      >
+                        {getOrderStatusLabel(order.orderStatus)}
+                      </span>
+                    </div>
+
+                    <Link
+                      href={`/account/orders?orderId=${order.id}`}
+                      className="p-2 border border-brand-border bg-brand-surface hover:border-brand-accent transition-colors text-brand-muted hover:text-brand-dark shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                      title="View order details"
+                      aria-label={`View order ${order.id}`}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
                   </div>
-                  <Link href={`/orders?orderId=${order.id}`}
-                    className="ml-2 shrink-0 p-2 rounded-xl hover:bg-pink-100 transition-colors text-rose-400 hover:text-rose-700">
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
                 </div>
               );
             })}
           </div>
         )}
+      </div>
+
+      {/* Quick Shortcuts */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Link
+          href="/account/settings"
+          className="p-5 bg-brand-surface border border-brand-border hover:border-brand-accent transition-colors flex items-center justify-between"
+        >
+          <div>
+            <h3 className="font-serif text-sm text-brand-dark font-medium">Profile & Security</h3>
+            <p className="text-xs text-brand-muted mt-0.5">
+              Update contact info, profile photo, or password
+            </p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-brand-muted" />
+        </Link>
+
+        <Link
+          href="/account/wishlist"
+          className="p-5 bg-brand-surface border border-brand-border hover:border-brand-accent transition-colors flex items-center justify-between"
+        >
+          <div>
+            <h3 className="font-serif text-sm text-brand-dark font-medium">Saved Wishlist</h3>
+            <p className="text-xs text-brand-muted mt-0.5">
+              Review products saved for future purchases
+            </p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-brand-muted" />
+        </Link>
       </div>
     </div>
   );

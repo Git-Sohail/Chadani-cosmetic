@@ -1,10 +1,21 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import Image from 'next/image';
 import {
-  ChevronDown, ChevronUp, Calendar, Hash, MapPin, Phone,
-  CreditCard, User, ShoppingBag, Image as ImageIcon, Package,
-  Star, Loader2, CheckCircle, Pencil,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Hash,
+  MapPin,
+  Phone,
+  Banknote,
+  User,
+  ShoppingBag,
+  Star,
+  Loader2,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import { formatPrice } from '../../utils/currency';
 import { getOrderStatusLabel, getOrderStatusMessage, getOrderStatusStyles } from '../../utils/orderStatus';
@@ -18,10 +29,22 @@ function StarPicker({ value, onChange }) {
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((s) => (
-        <button key={s} type="button" onClick={() => onChange(s)}
-          onMouseEnter={() => setHovered(s)} onMouseLeave={() => setHovered(0)}
-          className="cursor-pointer" aria-label={`${s} star`}>
-          <Star className={`w-6 h-6 transition-colors ${s <= (hovered || value) ? 'fill-amber-400 text-amber-400' : 'text-rose-200 fill-rose-100'}`} />
+        <button
+          key={s}
+          type="button"
+          onClick={() => onChange(s)}
+          onMouseEnter={() => setHovered(s)}
+          onMouseLeave={() => setHovered(0)}
+          className="cursor-pointer p-1"
+          aria-label={`${s} star`}
+        >
+          <Star
+            className={`w-5 h-5 transition-colors ${
+              s <= (hovered || value)
+                ? 'fill-amber-400 text-amber-400'
+                : 'text-brand-border fill-brand-bg'
+            }`}
+          />
         </button>
       ))}
     </div>
@@ -46,7 +69,9 @@ function ProductReviewInline({ item }) {
     if (!productId) return;
     setStatus('loading');
     try {
-      const res = await axios.get(`${API_URL}/reviews/product/${productId}/can-review`, { headers: authHeader });
+      const res = await axios.get(`${API_URL}/reviews/product/${productId}/can-review`, {
+        headers: authHeader,
+      });
       if (res.data.canReview) {
         setStatus('form');
       } else if (res.data.reason === 'already_reviewed') {
@@ -57,99 +82,136 @@ function ProductReviewInline({ item }) {
       } else {
         setStatus('idle');
       }
-    } catch { setStatus('idle'); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    } catch {
+      setStatus('idle');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API_URL, productId, token]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); setError(''); setSubmitting(true);
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
     try {
-      const res = await axios.post(`${API_URL}/reviews/product/${productId}`,
-        { rating, comment: comment.trim() || undefined }, { headers: authHeader });
-      setExisting(res.data.review); setEditing(false); setStatus('done');
-    } catch (err) { setError(err.response?.data?.error || 'Could not submit.'); }
-    finally { setSubmitting(false); }
+      const res = await axios.post(
+        `${API_URL}/reviews/product/${productId}`,
+        { rating, comment: comment.trim() || undefined },
+        { headers: authHeader }
+      );
+      setExisting(res.data.review);
+      setEditing(false);
+      setStatus('done');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not submit review.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleEditSubmit = async (e) => {
-    e.preventDefault(); setError(''); setSubmitting(true);
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
     try {
-      const res = await axios.put(`${API_URL}/reviews/${existing.id}`,
-        { rating, comment: comment.trim() || undefined }, { headers: authHeader });
-      setExisting(res.data.review); setEditing(false);
-    } catch (err) { setError(err.response?.data?.error || 'Could not update.'); }
-    finally { setSubmitting(false); }
+      const res = await axios.put(
+        `${API_URL}/reviews/${existing.id}`,
+        { rating, comment: comment.trim() || undefined },
+        { headers: authHeader }
+      );
+      setExisting(res.data.review);
+      setEditing(false);
+      setStatus('done');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not update review.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  if (!productId) return null;
-
-  // Idle — show button
   if (status === 'idle') {
     return (
-      <button type="button" onClick={checkEligibility}
-        className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-black uppercase tracking-wider hover:bg-amber-100 transition-colors">
-        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-        Write a Review
+      <button
+        type="button"
+        onClick={checkEligibility}
+        className="mt-2 text-xs text-brand-accent hover:underline font-medium flex items-center gap-1 cursor-pointer"
+      >
+        <Star className="w-3.5 h-3.5" /> Rate & Review this product
       </button>
     );
   }
 
   if (status === 'loading') {
     return (
-      <div className="mt-3 flex items-center gap-2 text-xs text-rose-900/40">
-        <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+      <div className="mt-2 text-xs text-brand-muted flex items-center gap-2">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking eligibility...
       </div>
     );
   }
 
-  // Already reviewed — show summary + edit
   if (status === 'done' && !editing) {
     return (
-      <div className="mt-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100 space-y-1">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">Your review</span>
-            <div className="flex items-center gap-0.5 ml-1">
-              {[1,2,3,4,5].map((s) => (
-                <Star key={s} className={`w-3.5 h-3.5 ${s <= existing?.rating ? 'fill-amber-400 text-amber-400' : 'text-rose-200 fill-rose-100'}`} />
+      <div className="mt-2 p-3 bg-brand-bg border border-brand-border text-xs space-y-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="font-semibold text-brand-dark">Your Review</span>
+            <div className="flex ml-2">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-3 h-3 ${
+                    i < existing?.rating ? 'fill-amber-400 text-amber-400' : 'text-brand-border'
+                  }`}
+                />
               ))}
             </div>
           </div>
-          <button type="button"
-            onClick={() => { setRating(existing?.rating ?? 5); setComment(existing?.comment ?? ''); setEditing(true); }}
-            className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-600 hover:text-emerald-800 transition-colors">
-            <Pencil className="w-3 h-3" /> Edit
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-[11px] text-brand-accent hover:underline cursor-pointer"
+          >
+            Edit
           </button>
         </div>
-        {existing?.comment && (
-          <p className="text-xs text-emerald-800/70 font-medium leading-relaxed">{existing.comment}</p>
-        )}
+        {existing?.comment && <p className="text-brand-muted italic">&ldquo;{existing.comment}&rdquo;</p>}
       </div>
     );
   }
 
-  // Form (new or edit)
   const isEdit = status === 'done' && editing;
   return (
-    <form onSubmit={isEdit ? handleEditSubmit : handleSubmit}
-      className="mt-3 p-4 rounded-2xl bg-pink-50/60 border border-pink-100 space-y-3">
-      <p className="text-[10px] font-black uppercase tracking-widest text-rose-900/50">
-        {isEdit ? 'Edit your review' : 'Rate this product'}
+    <form
+      onSubmit={isEdit ? handleEditSubmit : handleSubmit}
+      className="mt-3 p-4 bg-brand-bg border border-brand-border space-y-3"
+    >
+      <p className="text-[10px] uppercase tracking-wider text-brand-muted font-medium">
+        {isEdit ? 'Edit Your Review' : 'Rate This Item'}
       </p>
       <StarPicker value={rating} onChange={setRating} />
-      <textarea value={comment} onChange={(e) => setComment(e.target.value)}
-        placeholder="Share your experience (optional)…" rows={2} maxLength={1000}
-        className="w-full px-3 py-2.5 bg-white border border-pink-100 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-rose-200" />
-      {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Write your review here (optional)..."
+        rows={2}
+        maxLength={1000}
+        className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded text-xs text-brand-text resize-none focus:outline-none focus:border-brand-accent"
+      />
+      {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
       <div className="flex gap-2">
-        <button type="submit" disabled={submitting}
-          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-rose-900 text-white text-[10px] font-black uppercase tracking-wider hover:bg-rose-950 disabled:opacity-50 transition-colors">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-dark text-brand-surface text-xs uppercase tracking-wider font-medium hover:bg-brand-accent disabled:opacity-50 transition-colors cursor-pointer"
+        >
           {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Star className="w-3.5 h-3.5" />}
-          {isEdit ? 'Save changes' : 'Post Review'}
+          <span>{isEdit ? 'Save Changes' : 'Post Review'}</span>
         </button>
-        <button type="button" onClick={() => isEdit ? setEditing(false) : setStatus('idle')}
-          className="px-5 py-2 rounded-xl border border-pink-100 text-[10px] font-black uppercase tracking-wider text-rose-900 hover:bg-pink-50 transition-colors">
+        <button
+          type="button"
+          onClick={() => (isEdit ? setEditing(false) : setStatus('idle'))}
+          className="px-4 py-2 border border-brand-border bg-brand-surface text-brand-dark text-xs uppercase tracking-wider font-medium hover:border-brand-accent transition-colors cursor-pointer"
+        >
           Cancel
         </button>
       </div>
@@ -157,160 +219,305 @@ function ProductReviewInline({ item }) {
   );
 }
 
-// ── Reusable sub-components ───────────────────────────────────────────────────
-function ProductThumb({ src, alt, onZoom }) {
-  return (
-    <button type="button" onClick={() => src && onZoom(src)}
-      className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl border border-pink-100 overflow-hidden shrink-0 bg-white ${src ? 'cursor-zoom-in hover:ring-2 hover:ring-rose-300' : 'cursor-default'}`}>
-      {src
-        ? <img src={src} alt={alt} className="w-full h-full object-cover" />
-        : <div className="w-full h-full flex items-center justify-center bg-pink-50"><ImageIcon className="w-5 h-5 text-pink-200" /></div>}
-    </button>
-  );
-}
-
-function SectionHeader({ icon: Icon, title, subtitle }) {
-  return (
-    <div className="flex items-start gap-3 pb-4 border-b border-pink-100/80">
-      <div className="p-2 rounded-xl bg-rose-900 text-white shrink-0"><Icon className="w-4 h-4" /></div>
-      <div>
-        <h3 className="text-xs font-black uppercase tracking-widest text-rose-950">{title}</h3>
-        {subtitle && <p className="text-[10px] text-rose-900/50 font-semibold mt-0.5">{subtitle}</p>}
-      </div>
-    </div>
-  );
-}
-
-// ── Main card ─────────────────────────────────────────────────────────────────
-export default function OrderHistoryCard({ order, isExpanded, isHighlighted, onToggle, onPreviewImage }) {
-  const items = order.orderItems || [];
+// ── Main Order Card ───────────────────────────────────────────────────────────
+export default function OrderHistoryCard({
+  order,
+  isExpanded,
+  isHighlighted,
+  onToggle,
+  onPreviewImage,
+  onCancelOrder,
+}) {
+  const items = order.orderItems || order.products || [];
   const itemCount = items.reduce((sum, i) => sum + (i.quantity || 1), 0);
   const previewItems = items.slice(0, 4);
   const extraCount = items.length - previewItems.length;
-  const isDelivered = order.orderStatus === 'delivered';
+  const isDelivered = order.orderStatus?.toLowerCase() === 'delivered';
+  const isPending = order.orderStatus?.toLowerCase() === 'pending';
+  const [cancelling, setCancelling] = useState(false);
+
+  // Derive products subtotal from snapshot prices
+  const productsSubtotal = items.reduce(
+    (sum, i) => sum + (i.subtotal ?? i.price * i.quantity),
+    0
+  );
+  // Delivery fee is difference between order.totalAmount and productsSubtotal (default Rs. 100)
+  const deliveryFee =
+    order.totalAmount > productsSubtotal ? order.totalAmount - productsSubtotal : 100;
+
+  const handleCancelClick = async () => {
+    if (
+      !confirm(
+        'Are you sure you want to cancel this pending order? This will release the reserved inventory.'
+      )
+    ) {
+      return;
+    }
+    setCancelling(true);
+    if (onCancelOrder) {
+      await onCancelOrder(order.id);
+    }
+    setCancelling(false);
+  };
 
   return (
-    <article id={`order-${order.id}`}
-      className={`bg-white border rounded-[2rem] overflow-hidden shadow-sm transition-all duration-300 scroll-mt-28 ${
-        isHighlighted ? 'border-rose-500 ring-2 ring-rose-400/50 shadow-lg shadow-rose-200/40' : 'border-pink-100 hover:shadow-md'}`}>
-
-      {/* Section 1: Summary */}
-      <header className="p-5 sm:p-6 bg-gradient-to-r from-pink-50/80 to-white border-b border-pink-100/60">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-3 flex-1 min-w-[200px]">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${getOrderStatusStyles(order.orderStatus)}`}>
+    <article
+      id={`order-${order.id}`}
+      className={`bg-brand-surface border overflow-hidden transition-all duration-300 scroll-mt-28 ${
+        isHighlighted
+          ? 'border-brand-accent ring-1 ring-brand-accent shadow-md'
+          : 'border-brand-border hover:border-brand-border/90'
+      }`}
+    >
+      {/* ── Order Header Summary ── */}
+      <header className="p-5 sm:p-6 border-b border-brand-border/60">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2 flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span
+                className={`inline-block px-2.5 py-0.5 text-[9px] uppercase tracking-wider font-semibold border ${getOrderStatusStyles(
+                  order.orderStatus
+                )}`}
+              >
                 {getOrderStatusLabel(order.orderStatus)}
               </span>
-              <span className="text-[10px] font-mono font-bold text-rose-900/50">#{order.id.slice(0, 8).toUpperCase()}</span>
+              <span className="text-xs font-mono font-medium text-brand-muted">
+                #{order.id.slice(0, 8).toUpperCase()}
+              </span>
             </div>
-            <div className="flex flex-wrap gap-4 text-xs font-bold text-rose-950/80">
+
+            <div className="flex flex-wrap items-center gap-4 text-xs text-brand-muted">
               <span className="inline-flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-rose-600" />
-                {new Date(order.createdAt).toLocaleDateString('en-NP', { day: '2-digit', month: 'short', year: 'numeric' })}
+                <Calendar className="w-3.5 h-3.5 text-brand-accent" />
+                {new Date(order.createdAt).toLocaleDateString('en-NP', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <ShoppingBag className="w-3.5 h-3.5 text-rose-600" />
+                <ShoppingBag className="w-3.5 h-3.5 text-brand-accent" />
                 {itemCount} {itemCount === 1 ? 'item' : 'items'}
               </span>
             </div>
-            <p className="text-sm font-semibold text-rose-900/75 leading-relaxed max-w-xl">{getOrderStatusMessage(order.orderStatus)}</p>
+
+            <p className="text-xs text-brand-muted leading-relaxed max-w-xl">
+              {getOrderStatusMessage(order.orderStatus)}
+            </p>
           </div>
-          <div className="text-right shrink-0">
-            <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40 mb-1">Order total (NPR)</p>
-            <p className="text-xl sm:text-2xl font-black text-rose-900">{formatPrice(order.totalAmount)}</p>
+
+          <div className="text-left sm:text-right shrink-0 space-y-1">
+            <span className="text-[10px] uppercase tracking-wider text-brand-muted block">
+              Total Order Due
+            </span>
+            <p className="font-serif text-xl sm:text-2xl font-semibold text-brand-dark">
+              {formatPrice(order.totalAmount)}
+            </p>
+            <span className="text-[10px] text-brand-muted block">
+              Includes Rs. {deliveryFee} Dharan Delivery
+            </span>
           </div>
         </div>
 
+        {/* Thumbnail preview row when collapsed */}
         {!isExpanded && previewItems.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-pink-100/60">
-            <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40 mb-2">Products in this order</p>
+          <div className="mt-4 pt-4 border-t border-brand-border/50 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              {previewItems.map((item) => <ProductThumb key={item.id} src={item.productImage} alt={item.productName} onZoom={onPreviewImage} />)}
-              {extraCount > 0 && <span className="text-[10px] font-black text-rose-800/60 px-2">+{extraCount}</span>}
+              {previewItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => item.productImage && onPreviewImage && onPreviewImage(item.productImage)}
+                  className={`relative w-12 h-14 bg-brand-bg border border-brand-border overflow-hidden shrink-0 ${
+                    item.productImage ? 'cursor-zoom-in' : 'cursor-default'
+                  }`}
+                  title={item.productName}
+                >
+                  {item.productImage ? (
+                    <Image
+                      src={item.productImage}
+                      alt={item.productName}
+                      fill
+                      sizes="48px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center font-serif text-[9px] text-brand-muted/40 italic">
+                      Item
+                    </div>
+                  )}
+                </button>
+              ))}
+              {extraCount > 0 && (
+                <span className="text-xs font-mono text-brand-muted px-1.5">+{extraCount} more</span>
+              )}
             </div>
+
+            <button
+              type="button"
+              onClick={onToggle}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium uppercase tracking-wider text-brand-dark hover:text-brand-accent transition-colors cursor-pointer min-h-[44px] shrink-0"
+            >
+              <span>View Details</span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
           </div>
         )}
 
-        <button type="button" onClick={onToggle}
-          className="mt-5 w-full sm:w-auto px-5 py-2.5 rounded-xl bg-rose-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-rose-950 flex items-center justify-center gap-2 transition-colors">
-          {isExpanded ? 'Hide order details' : 'View order details'}
-          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
+        {isExpanded && (
+          <div className="mt-4 pt-3 border-t border-brand-border/50 flex justify-end">
+            <button
+              type="button"
+              onClick={onToggle}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-brand-muted hover:text-brand-dark transition-colors cursor-pointer"
+            >
+              <span>Hide Details</span>
+              <ChevronUp className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </header>
 
+      {/* ── Expanded Order Details Drawer ── */}
       {isExpanded && (
-        <div className="animate-slideDown">
-          {/* Section 2: Progress */}
-          <section className="p-5 sm:p-6 border-b border-pink-50 bg-white">
-            <SectionHeader icon={Package} title="Order progress" subtitle="Track where your package is in our fulfillment flow" />
-            <div className="pt-2"><OrderStatusStepper status={order.orderStatus} /></div>
-          </section>
+        <div className="divide-y divide-brand-border/60 bg-brand-bg/30 animate-fadeIn">
+          {/* Status Progression Stepper */}
+          <div className="p-5 sm:p-6 bg-brand-surface">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-brand-muted mb-4">
+              Dispatch Progression
+            </h3>
+            <OrderStatusStepper status={order.orderStatus} />
+          </div>
 
-          {/* Section 3: Delivery details */}
-          <section className="p-5 sm:p-6 border-b border-pink-50 bg-pink-50/20">
-            <SectionHeader icon={MapPin} title="Delivery details" subtitle="Shipping and payment information for this order" />
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 text-sm">
-              <div className="rounded-2xl bg-white border border-pink-100/80 p-4 space-y-2">
-                <dt className="text-[9px] font-black uppercase tracking-widest text-rose-900/40 flex items-center gap-1"><User className="w-3 h-3" /> Recipient</dt>
-                <dd className="font-black text-rose-950">{order.customerName}</dd>
-                <dd className="text-rose-900/60 font-semibold flex items-center gap-1 text-xs"><Phone className="w-3.5 h-3.5" />{order.phone}</dd>
-              </div>
-              <div className="rounded-2xl bg-white border border-pink-100/80 p-4 space-y-2">
-                <dt className="text-[9px] font-black uppercase tracking-widest text-rose-900/40 flex items-center gap-1"><MapPin className="w-3 h-3" /> Delivery address</dt>
-                <dd className="text-rose-950/80 font-medium leading-relaxed">{order.address}</dd>
-                <dd className="text-[10px] font-black uppercase tracking-wider text-rose-800 flex items-center gap-1 pt-1"><CreditCard className="w-3.5 h-3.5" />{order.paymentMethod}</dd>
-              </div>
-            </dl>
-          </section>
+          {/* Delivery & Recipient Details */}
+          <div className="p-5 sm:p-6 bg-brand-surface grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="border border-brand-border bg-brand-bg p-4 space-y-2">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-brand-muted flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-brand-accent" /> Recipient Details
+              </span>
+              <p className="font-serif text-sm text-brand-dark font-medium">{order.customerName}</p>
+              <p className="text-xs text-brand-muted flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5" />
+                <span>{order.phone}</span>
+              </p>
+            </div>
 
-          {/* Section 4: Products purchased */}
-          <section className="p-5 sm:p-6 bg-gradient-to-b from-rose-950/[0.03] to-pink-50/30 border-l-4 border-rose-600">
-            <SectionHeader icon={ShoppingBag} title="Products purchased"
-              subtitle={isDelivered ? 'Order delivered — rate each product below' : 'Items exactly as ordered — prices locked at checkout (NPR)'} />
+            <div className="border border-brand-border bg-brand-bg p-4 space-y-2">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-brand-muted flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-brand-accent" /> Dharan Destination
+              </span>
+              <p className="text-xs text-brand-dark leading-relaxed">
+                {[order.deliveryWard, order.deliveryArea, order.address].filter(Boolean).join(', ')}
+                , Dharan
+              </p>
+              {order.deliveryLandmark && (
+                <p className="text-[11px] text-brand-muted">Landmark: {order.deliveryLandmark}</p>
+              )}
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-brand-muted font-mono pt-1 block">
+                <Banknote className="w-3.5 h-3.5 text-brand-accent" />
+                <span>{order.paymentMethod || 'Cash on Delivery'}</span>
+              </span>
+            </div>
+          </div>
 
-            <div className="space-y-3 pt-2">
+          {/* Purchased Line Items Snapshot */}
+          <div className="p-5 sm:p-6 bg-brand-surface space-y-4">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-brand-muted">
+              Purchased Line Items
+            </h3>
+
+            <div className="space-y-3">
               {items.map((item) => (
-                <div key={item.id} className="p-4 bg-white rounded-2xl border border-pink-100 shadow-sm hover:border-rose-200 transition-colors">
-                  <div className="flex gap-4">
-                    <ProductThumb src={item.productImage} alt={item.productName} onZoom={onPreviewImage} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <p className="font-serif font-black text-rose-950 text-sm leading-snug">{item.productName}</p>
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-pink-50 border border-pink-100 text-rose-800 text-[8px] font-black uppercase tracking-wider rounded">
-                            {item.productCategory || 'General'}
-                          </span>
+                <div
+                  key={item.id}
+                  className="p-4 border border-brand-border bg-brand-bg/50 flex flex-col sm:flex-row gap-4 justify-between"
+                >
+                  <div className="flex gap-3.5 min-w-0">
+                    <div className="relative w-14 aspect-[4/5] bg-brand-bg border border-brand-border overflow-hidden shrink-0">
+                      {item.productImage ? (
+                        <Image
+                          src={item.productImage}
+                          alt={item.productName}
+                          fill
+                          sizes="56px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-serif text-[10px] text-brand-muted/50 italic">
+                          Item
                         </div>
-                        <p className="text-sm font-black text-rose-900 shrink-0">{formatPrice(item.subtotal ?? item.price * item.quantity)}</p>
-                      </div>
-                      {item.productDescription && (
-                        <p className="text-[10px] text-rose-900/50 mt-2 line-clamp-2 font-medium">{item.productDescription}</p>
                       )}
-                      <div className="flex flex-wrap gap-4 mt-3 text-[10px] font-bold text-rose-900/60">
-                        <span>Unit: <span className="text-rose-950">{formatPrice(item.price)}</span></span>
-                        <span>Qty: <span className="text-rose-950">{item.quantity}</span></span>
-                        {item.sku && <span className="font-mono">SKU: <span className="text-rose-950">{item.sku}</span></span>}
+                    </div>
+
+                    <div className="space-y-1 min-w-0">
+                      <p className="font-serif text-sm text-brand-dark font-medium truncate">
+                        {item.productName}
+                      </p>
+                      <span className="text-[10px] uppercase tracking-wider text-brand-accent block">
+                        {item.productCategory || 'Cosmetics'}
+                      </span>
+                      <div className="flex items-center gap-3 text-xs text-brand-muted pt-0.5">
+                        <span>Price: {formatPrice(item.price)}</span>
+                        <span>&bull;</span>
+                        <span>Qty: {item.quantity}</span>
                       </div>
+                      {/* Product Review form if delivered */}
+                      {isDelivered && <ProductReviewInline item={item} />}
                     </div>
                   </div>
-                  {/* Review — only for delivered orders */}
-                  {isDelivered && <ProductReviewInline item={item} />}
+
+                  <div className="text-left sm:text-right shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-brand-border/40">
+                    <span className="font-medium text-sm text-brand-dark block">
+                      {formatPrice(item.subtotal ?? item.price * item.quantity)}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 pt-4 border-t-2 border-dashed border-pink-200 flex flex-wrap items-center justify-between gap-3">
-              <span className="text-[10px] font-black uppercase tracking-widest text-rose-900/50 flex items-center gap-1">
-                <Hash className="w-3.5 h-3.5" />Full order ID: <span className="font-mono text-rose-950">{order.id}</span>
-              </span>
-              <div className="text-right">
-                <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">Grand total</p>
-                <p className="text-lg font-black text-rose-900">{formatPrice(order.totalAmount)}</p>
-                <span className="text-[9px] text-rose-900/50 block">Includes Rs. 100 Dharan Delivery</span>
+            {/* Financial Summary Breakdown */}
+            <div className="border-t border-brand-border/60 pt-4 space-y-2 text-xs">
+              <div className="flex justify-between text-brand-muted">
+                <span>Products Subtotal</span>
+                <span className="font-medium text-brand-dark">{formatPrice(productsSubtotal)}</span>
+              </div>
+              <div className="flex justify-between text-brand-muted">
+                <span>Dharan Doorstep Delivery</span>
+                <span className="font-medium text-brand-dark">{formatPrice(deliveryFee)}</span>
+              </div>
+              <div className="border-t border-brand-border/60 pt-2.5 flex justify-between items-baseline font-serif text-base text-brand-dark">
+                <span className="font-sans text-xs font-semibold uppercase tracking-wider text-brand-dark">
+                  Grand Total
+                </span>
+                <span className="text-xl font-semibold">{formatPrice(order.totalAmount)}</span>
               </div>
             </div>
-          </section>
+
+            {/* Pending Order Cancellation Action */}
+            {isPending && (
+              <div className="pt-4 border-t border-brand-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50/50 border border-amber-200/60 p-4">
+                <div className="text-xs text-amber-900">
+                  <p className="font-semibold">Order is currently pending</p>
+                  <p className="text-amber-800/80 text-[11px]">
+                    You may cancel this order before dispatch to release reserved stock.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelClick}
+                  disabled={cancelling}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-red-800 text-white text-xs font-medium uppercase tracking-wider hover:bg-red-900 disabled:opacity-50 transition-colors min-h-[44px] cursor-pointer"
+                >
+                  {cancelling ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <XCircle className="w-3.5 h-3.5" />
+                  )}
+                  <span>Cancel Order</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </article>
