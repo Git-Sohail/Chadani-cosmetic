@@ -36,3 +36,4 @@ export function getSafeRedirect(target, fallback = '/account') {
 
   return trimmed;
 }
+
