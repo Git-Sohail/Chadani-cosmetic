@@ -20,3 +20,4 @@ export default function robots() {
     sitemap: `${siteUrl.replace(/\/$/, '')}/sitemap.xml`,
   };
 }
+

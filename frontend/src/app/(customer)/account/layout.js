@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { resolveImageUrl } from '../../../utils/imageUrl';
+import Avatar from '../../../components/Avatar';
 import {
   LayoutDashboard,
   Package,
@@ -49,24 +50,16 @@ export default function AccountLayout({ children }) {
 
   if (!user || user.role === 'admin') return null;
 
-  const avatar = resolveImageUrl(user.profileImage);
-
   return (
     <div className="bg-brand-bg min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Mobile Sub-Navigation Bar */}
         <div className="lg:hidden mb-6 border-b border-brand-border pb-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="relative w-10 h-10 border border-brand-border bg-brand-surface rounded-full overflow-hidden shrink-0 flex items-center justify-center font-serif text-sm text-brand-dark">
-              {avatar ? (
-                <Image src={avatar} alt="" fill sizes="40px" className="object-cover" />
-              ) : (
-                user.name?.charAt(0)?.toUpperCase()
-              )}
-            </div>
+            <Avatar src={user.profileImage} name={user.name} size="md" />
             <div className="min-w-0 flex-1">
               <p className="font-serif text-base text-brand-dark truncate">{user.name}</p>
-              <p className="text-[11px] text-brand-muted truncate">{user.email}</p>
+              <p className="text-[11px] text-brand-muted truncate font-mono">{user.email}</p>
             </div>
           </div>
 
@@ -98,13 +91,7 @@ export default function AccountLayout({ children }) {
               {/* Customer Profile Header */}
               <div className="p-6 border-b border-brand-border/60 space-y-3">
                 <div className="flex items-center gap-3.5">
-                  <div className="relative w-12 h-12 border border-brand-border bg-brand-bg rounded-full overflow-hidden shrink-0 flex items-center justify-center font-serif text-base text-brand-dark">
-                    {avatar ? (
-                      <Image src={avatar} alt="" fill sizes="48px" className="object-cover" />
-                    ) : (
-                      user.name?.charAt(0)?.toUpperCase()
-                    )}
-                  </div>
+                  <Avatar src={user.profileImage} name={user.name} size="lg" />
                   <div className="min-w-0 flex-1">
                     <p className="font-serif text-base text-brand-dark truncate">{user.name}</p>
                     <p className="text-xs text-brand-muted truncate font-mono">{user.email}</p>

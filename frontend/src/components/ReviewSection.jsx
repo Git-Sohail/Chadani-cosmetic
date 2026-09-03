@@ -5,6 +5,7 @@ import axios from 'axios';
 import { Star, Pencil, Trash2, Loader2, CheckCircle, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Button from './Button';
+import Avatar from './Avatar';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -359,17 +360,11 @@ export default function ReviewSection({ productId }) {
                   className="flex gap-4 pb-6 border-b border-brand-border/50 last:border-0 last:pb-0"
                 >
                   {/* User Avatar */}
-                  <div className="w-9 h-9 rounded-full bg-brand-dark text-brand-surface flex items-center justify-center font-serif text-sm shrink-0 uppercase overflow-hidden">
-                    {review.user?.profileImage ? (
-                      <img
-                        src={review.user.profileImage}
-                        alt={review.user.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      review.user?.name?.charAt(0) || 'P'
-                    )}
-                  </div>
+                  <Avatar
+                    src={review.user?.profileImage}
+                    name={review.user?.name}
+                    size="sm"
+                  />
 
                   <div className="flex-1 min-w-0 space-y-1.5">
                     {isEditing ? (

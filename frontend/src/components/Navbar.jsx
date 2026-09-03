@@ -1,13 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, Heart, Menu, X, Search, LogOut, MessageCircle } from 'lucide-react';
+import {
+  ShoppingBag,
+  Heart,
+  Menu,
+  X,
+  Search,
+  LogOut,
+  MessageCircle,
+  ChevronDown,
+  User,
+  Package,
+  Settings,
+  LayoutDashboard,
+} from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import { resolveImageUrl } from '../utils/imageUrl';
 import Button from './Button';
 import Logo from './Logo';
+import Avatar from './Avatar';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -18,6 +32,8 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef(null);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -51,7 +67,30 @@ export default function Navbar() {
 
   useEffect(() => {
     setIsOpen(false);
+    setAccountMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target)) {
+        setAccountMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    if (accountMenuOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [accountMenuOpen]);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : '';
@@ -216,51 +255,120 @@ export default function Navbar() {
                 </Link>
 
                 {/* User Session / Sign In */}
-                <div className="pl-3 border-l border-brand-border flex items-center gap-3">
+                <div className="pl-2.5 border-l border-brand-border/60 flex items-center">
                   {isLoggedIn ? (
-                    <div className="flex items-center gap-3">
-                      {userRole !== 'admin' && (
-                        <Link
-                          href="/account"
-                          className="w-8 h-8 rounded-full overflow-hidden border border-brand-border bg-brand-surface text-brand-dark flex items-center justify-center text-xs font-medium shrink-0 hover:border-brand-accent transition-colors"
-                          title="Your account"
-                        >
-                          {resolveImageUrl(user.profileImage) ? (
-                            <img
-                              src={resolveImageUrl(user.profileImage)}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            user.name?.charAt(0)
-                          )}
-                        </Link>
-                      )}
-                      <div className="hidden xl:flex flex-col items-end leading-tight">
-                        <span className="text-[10px] font-semibold tracking-wider text-brand-dark uppercase">
-                          {user.name.split(' ')[0]}
-                        </span>
-                        {userRole === 'admin' ? (
-                          <Link href="/admin" className="text-[9px] font-medium text-brand-accent tracking-wider uppercase hover:underline">
-                            Dashboard &rarr;
-                          </Link>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-[9px] text-brand-muted tracking-wider uppercase">
-                            <Link href="/account" className="hover:text-brand-dark">Account</Link>
-                            <span>&bull;</span>
-                            <Link href="/account/orders" className="hover:text-brand-dark">Orders</Link>
-                          </div>
-                        )}
-                      </div>
+                    <div className="relative" ref={accountMenuRef}>
                       <button
                         type="button"
-                        onClick={logout}
-                        className="text-brand-muted hover:text-brand-dark p-1.5 transition-colors cursor-pointer"
-                        title="Sign Out"
-                        aria-label="Sign Out"
+                        onClick={() => setAccountMenuOpen((prev) => !prev)}
+                        aria-expanded={accountMenuOpen}
+                        aria-haspopup="true"
+                        className="flex items-center gap-2 py-1 px-1.5 rounded text-brand-dark hover:text-brand-accent transition-colors cursor-pointer group"
                       >
-                        <LogOut className="w-4 h-4" />
+                        <Avatar
+                          src={user.profileImage}
+                          name={user.name}
+                          size="sm"
+                          className="group-hover:border-brand-accent transition-colors"
+                        />
+                        <span className="text-[11px] font-medium tracking-wider uppercase truncate max-w-[110px] text-brand-dark">
+                          {user.name?.split(' ')[0] || 'Account'}
+                        </span>
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 text-brand-muted transition-transform duration-200 ${
+                            accountMenuOpen ? 'rotate-180 text-brand-dark' : ''
+                          }`}
+                        />
                       </button>
+
+                      {/* Account Dropdown */}
+                      {accountMenuOpen && (
+                        <div
+                          role="menu"
+                          className="absolute right-0 top-full mt-2 w-64 bg-brand-surface border border-brand-border shadow-lg py-2 z-[100] animate-fadeIn"
+                        >
+                          {/* Identity Header */}
+                          <div className="px-4 py-3 border-b border-brand-border/60 space-y-0.5">
+                            <p className="text-xs font-medium text-brand-dark truncate">{user.name}</p>
+                            <p className="text-[11px] text-brand-muted font-mono truncate">{user.email}</p>
+                            {userRole === 'admin' && (
+                              <span className="inline-block mt-1 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider bg-brand-dark text-brand-surface">
+                                Administrator
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Links */}
+                          <div className="py-1">
+                            {userRole === 'admin' ? (
+                              <Link
+                                href="/admin"
+                                onClick={() => setAccountMenuOpen(false)}
+                                role="menuitem"
+                                className="flex items-center gap-2.5 px-4 py-2 text-xs text-brand-text hover:bg-brand-bg hover:text-brand-dark transition-colors"
+                              >
+                                <LayoutDashboard className="w-3.5 h-3.5 text-brand-accent" />
+                                <span>Admin Dashboard</span>
+                              </Link>
+                            ) : (
+                              <>
+                                <Link
+                                  href="/account"
+                                  onClick={() => setAccountMenuOpen(false)}
+                                  role="menuitem"
+                                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-brand-text hover:bg-brand-bg hover:text-brand-dark transition-colors"
+                                >
+                                  <User className="w-3.5 h-3.5 text-brand-accent" />
+                                  <span>Overview</span>
+                                </Link>
+                                <Link
+                                  href="/account/orders"
+                                  onClick={() => setAccountMenuOpen(false)}
+                                  role="menuitem"
+                                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-brand-text hover:bg-brand-bg hover:text-brand-dark transition-colors"
+                                >
+                                  <Package className="w-3.5 h-3.5 text-brand-accent" />
+                                  <span>My Orders</span>
+                                </Link>
+                                <Link
+                                  href="/account/wishlist"
+                                  onClick={() => setAccountMenuOpen(false)}
+                                  role="menuitem"
+                                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-brand-text hover:bg-brand-bg hover:text-brand-dark transition-colors"
+                                >
+                                  <Heart className="w-3.5 h-3.5 text-brand-accent" />
+                                  <span>Wishlist ({wishlistCount})</span>
+                                </Link>
+                                <Link
+                                  href="/account/settings"
+                                  onClick={() => setAccountMenuOpen(false)}
+                                  role="menuitem"
+                                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-brand-text hover:bg-brand-bg hover:text-brand-dark transition-colors"
+                                >
+                                  <Settings className="w-3.5 h-3.5 text-brand-accent" />
+                                  <span>Settings</span>
+                                </Link>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Sign Out */}
+                          <div className="border-t border-brand-border/60 pt-1 mt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAccountMenuOpen(false);
+                                logout();
+                              }}
+                              role="menuitem"
+                              className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-brand-muted hover:text-brand-dark hover:bg-brand-bg transition-colors cursor-pointer"
+                            >
+                              <LogOut className="w-3.5 h-3.5 text-brand-muted" />
+                              <span>Sign Out</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <Link href="/login">
@@ -378,16 +486,17 @@ export default function Navbar() {
               {isLoggedIn ? (
                 <div className="space-y-3 pt-2">
                   <div className="p-3.5 bg-brand-bg border border-brand-border rounded space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0">
+                    <div className="flex items-center gap-3">
+                      <Avatar src={user.profileImage} name={user.name} size="md" />
+                      <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-brand-dark uppercase tracking-wider truncate">{user.name}</p>
-                        <p className="text-[11px] text-brand-muted truncate">{user.email}</p>
+                        <p className="text-[11px] text-brand-muted font-mono truncate">{user.email}</p>
                       </div>
                       {userRole === 'admin' ? (
                         <Link
                           href="/admin"
                           onClick={() => setIsOpen(false)}
-                          className="px-2.5 py-1 bg-brand-dark text-brand-surface text-[10px] font-medium rounded uppercase tracking-wider"
+                          className="px-2.5 py-1 bg-brand-dark text-brand-surface text-[10px] font-medium rounded uppercase tracking-wider shrink-0"
                         >
                           Admin
                         </Link>
