@@ -1,6 +1,7 @@
 const prisma = require('../db');
 const { sendOrderConfirmationEmail, sendOrderStatusUpdateEmail } = require('../utils/email');
 const { formatOrder, formatOrders } = require('../utils/orderFormatter');
+const { getActivePrice, DHARAN_DELIVERY_FEE, calculateOrderTotal } = require('../utils/currency');
 const {
   createOrderStatusNotification,
   resolveNotifyUserId,
@@ -37,20 +38,19 @@ const placeOrder = async (req, res) => {
 
     // Begin database transaction for atomic order placement
     const newOrder = await prisma.$transaction(async (tx) => {
-      let totalAmount = 0;
+      let productsSubtotal = 0;
 
-      // 1. Validate stock availability and calculate total
+      // 1. Validate stock availability and calculate products subtotal
       for (const item of cartItems) {
         if (item.product.stock < item.quantity) {
           throw new Error(`Insufficient stock for "${item.product.name}". Available: ${item.product.stock}`);
         }
-        // Use discount price if available, otherwise regular price
-        const activePrice = item.product.discountPrice !== null && item.product.discountPrice !== undefined
-          ? item.product.discountPrice
-          : item.product.price;
-
-        totalAmount += activePrice * item.quantity;
+        const activePrice = getActivePrice(item.product);
+        productsSubtotal += activePrice * item.quantity;
       }
+
+      // Authoritative calculation: Products Subtotal + Flat Dharan Delivery (NPR 100)
+      const totalAmount = calculateOrderTotal(productsSubtotal);
 
       // 2. Create the order
       const order = await tx.order.create({
@@ -77,9 +77,7 @@ const placeOrder = async (req, res) => {
 
       // 3. Create order items and decrement product stocks
       for (const item of cartItems) {
-        const activePrice = item.product.discountPrice !== null && item.product.discountPrice !== undefined
-          ? item.product.discountPrice
-          : item.product.price;
+        const activePrice = getActivePrice(item.product);
         const subtotal = activePrice * item.quantity;
 
         // Create OrderItem snapshot

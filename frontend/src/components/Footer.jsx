@@ -3,85 +3,115 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Heart, Share2, Globe } from 'lucide-react';
+import { Mail, MapPin, MessageCircle, Banknote } from 'lucide-react';
 import Logo from './Logo';
+import { useChat } from '../context/ChatContext';
 
 export default function Footer() {
   const pathname = usePathname();
   const currentYear = new Date().getFullYear();
+  const { openChatWidget } = useChat();
 
   if (pathname?.startsWith('/admin')) {
     return null;
   }
 
   return (
-    <footer className="bg-luxury-pink border-t border-luxury-rose-gold/15 text-luxury-text">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10 pb-10 border-b border-luxury-rose-gold/15">
-          <div className="space-y-4 lg:col-span-1">
+    <footer className="bg-brand-surface border-t border-brand-border text-brand-text">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-12 pb-12 border-b border-brand-border/60">
+          {/* Col 1: Brand & Philosophy */}
+          <div className="space-y-4 lg:col-span-4">
             <Logo size="lg" href="/" />
-            <p className="text-sm text-luxury-text/55 font-light leading-relaxed max-w-xs">
-              Premium skincare, luxury cosmetics, and artisan jewellery.
+            <p className="text-xs sm:text-sm text-brand-muted font-normal leading-relaxed max-w-sm">
+              Chadani Cosmetic is a boutique destination for verified skincare treatments, daily cosmetics, and artisan traditional jewelry in Dharan, Nepal.
             </p>
-            <div className="flex gap-2.5">
-              <a href="#" className="w-9 h-9 rounded-full bg-white border border-luxury-rose-gold/20 flex items-center justify-center text-luxury-burgundy hover:bg-luxury-burgundy hover:text-white transition-colors" aria-label="Social">
-                <Share2 className="w-4 h-4" />
-              </a>
-              <a href="#" className="w-9 h-9 rounded-full bg-white border border-luxury-rose-gold/20 flex items-center justify-center text-luxury-burgundy hover:bg-luxury-burgundy hover:text-white transition-colors" aria-label="Website">
-                <Globe className="w-4 h-4" />
-              </a>
+            <div className="pt-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-brand-border bg-brand-bg text-[11px] text-brand-dark">
+                <Banknote className="w-3.5 h-3.5 text-brand-accent" />
+                <span>Dharan Delivery &bull; Flat Rs. 100 &bull; Cash on Delivery</span>
+              </div>
             </div>
           </div>
 
-          <div>
-            <h4 className="font-serif text-base text-luxury-text mb-4">Quick Links</h4>
-            <ul className="space-y-2.5 text-sm text-luxury-text/60 font-light">
-              <li><Link href="/" className="hover:text-luxury-burgundy transition-colors">Home</Link></li>
-              <li><Link href="/shop" className="hover:text-luxury-burgundy transition-colors">Shop</Link></li>
-              <li><Link href="/#collections" className="hover:text-luxury-burgundy transition-colors">Collections</Link></li>
-              <li><Link href="/#reviews" className="hover:text-luxury-burgundy transition-colors">Reviews</Link></li>
-              <li><Link href="/wishlist" className="hover:text-luxury-burgundy transition-colors">Wishlist</Link></li>
+          {/* Col 2: Boutique & Shop */}
+          <div className="lg:col-span-2 space-y-3">
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-dark">
+              Boutique
+            </h4>
+            <ul className="space-y-2.5 text-xs text-brand-muted">
+              <li>
+                <Link href="/" className="hover:text-brand-dark transition-colors">Home</Link>
+              </li>
+              <li>
+                <Link href="/shop" className="hover:text-brand-dark transition-colors">All Products</Link>
+              </li>
+              <li>
+                <Link href="/#collections" className="hover:text-brand-dark transition-colors">Departments</Link>
+              </li>
+              <li>
+                <Link href="/#reviews" className="hover:text-brand-dark transition-colors">Customer Reviews</Link>
+              </li>
             </ul>
           </div>
 
-          <div>
-            <h4 className="font-serif text-base text-luxury-text mb-4">Customer Care</h4>
-            <ul className="space-y-2.5 text-sm text-luxury-text/60 font-light">
-              <li><Link href="#" className="hover:text-luxury-burgundy transition-colors">Contact Support</Link></li>
-              <li><Link href="#" className="hover:text-luxury-burgundy transition-colors">Shipping & Delivery</Link></li>
-              <li><Link href="#" className="hover:text-luxury-burgundy transition-colors">Returns</Link></li>
-              <li><Link href="/orders" className="hover:text-luxury-burgundy transition-colors">Track Order</Link></li>
+          {/* Col 3: Customer Care */}
+          <div className="lg:col-span-3 space-y-3">
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-dark">
+              Customer Care
+            </h4>
+            <ul className="space-y-2.5 text-xs text-brand-muted">
+              <li>
+                <Link href="/orders" className="hover:text-brand-dark transition-colors">Track Orders</Link>
+              </li>
+              <li>
+                <Link href="/cart" className="hover:text-brand-dark transition-colors">Shopping Bag</Link>
+              </li>
+              <li>
+                <Link href="/wishlist" className="hover:text-brand-dark transition-colors">Saved Wishlist</Link>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={openChatWidget}
+                  className="hover:text-brand-dark transition-colors text-left flex items-center gap-1.5 cursor-pointer"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 text-brand-accent" />
+                  <span>Live Support Chat</span>
+                </button>
+              </li>
             </ul>
           </div>
 
-          <div className="space-y-3">
-            <h4 className="font-serif text-base text-luxury-text mb-4">Contact</h4>
-            <div className="flex items-start gap-2.5 text-sm text-luxury-text/60 font-light">
-              <MapPin className="w-4 h-4 shrink-0 text-luxury-rose-gold mt-0.5" />
-              <span>Dharan, Sunsari, Nepal</span>
+          {/* Col 4: Location & Contact */}
+          <div className="lg:col-span-3 space-y-3">
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-dark">
+              Store Location
+            </h4>
+            <div className="space-y-2.5 text-xs text-brand-muted">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 shrink-0 text-brand-accent mt-0.5" />
+                <span>Dharan, Sunsari, Koshi Province, Nepal</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Mail className="w-4 h-4 shrink-0 text-brand-accent" />
+                <span>support@chadanicosmetic.com</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2.5 text-sm text-luxury-text/60 font-light">
-              <Phone className="w-4 h-4 shrink-0 text-luxury-rose-gold" />
-              <span>+977 9800000000</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-luxury-text/60 font-light">
-              <Mail className="w-4 h-4 shrink-0 text-luxury-rose-gold" />
-              <span>support@chadanicosmetic.com</span>
-            </div>
-            <div className="pt-2 flex flex-wrap gap-1.5">
-              {['Visa', 'Mastercard', 'eSewa', 'Khalti'].map((pay) => (
-                <span key={pay} className="px-2.5 py-1 rounded-md bg-white border border-luxury-rose-gold/15 text-[9px] font-medium text-luxury-text/50 uppercase tracking-wider">
-                  {pay}
-                </span>
-              ))}
+
+            <div className="pt-3">
+              <p className="text-[11px] text-brand-muted/80 leading-relaxed">
+                Direct doorstep dispatch across all wards in Dharan (Flat Rs. 100). Cash on Delivery available upon arrival.
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-luxury-text/40">
+        {/* Bottom copyright */}
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-brand-muted">
           <p>© {currentYear} Chadani Cosmetic. All rights reserved.</p>
-          <p className="flex items-center gap-1.5 font-light">
-            Made with <Heart className="w-3.5 h-3.5 fill-luxury-rose-gold text-luxury-rose-gold" /> for your beauty journey
+          <p className="font-serif italic text-brand-muted/80">
+            Artfully curated for your everyday elegance.
           </p>
         </div>
       </div>

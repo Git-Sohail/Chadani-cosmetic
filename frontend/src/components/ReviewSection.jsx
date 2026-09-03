@@ -4,12 +4,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Star, Pencil, Trash2, Loader2, CheckCircle, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import Button from './Button';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function StarRating({ value, onChange, readonly = false, size = 'md' }) {
   const [hovered, setHovered] = useState(0);
-  const dim = size === 'sm' ? 'w-4 h-4' : 'w-6 h-6';
+  const dim = size === 'sm' ? 'w-3.5 h-3.5' : 'w-5 h-5';
 
   return (
     <div className="flex items-center gap-0.5">
@@ -21,14 +22,14 @@ function StarRating({ value, onChange, readonly = false, size = 'md' }) {
           onClick={() => !readonly && onChange?.(star)}
           onMouseEnter={() => !readonly && setHovered(star)}
           onMouseLeave={() => !readonly && setHovered(0)}
-          className={`transition-colors ${readonly ? 'cursor-default' : 'cursor-pointer'}`}
-          aria-label={`${star} star`}
+          className={`transition-colors ${readonly ? 'cursor-default' : 'cursor-pointer p-0.5'}`}
+          aria-label={`${star} star rating`}
         >
           <Star
             className={`${dim} transition-colors ${
               star <= (hovered || value)
-                ? 'fill-amber-400 text-amber-400'
-                : 'text-rose-200 fill-rose-100'
+                ? 'fill-brand-accent text-brand-accent'
+                : 'text-brand-border fill-transparent'
             }`}
           />
         </button>
@@ -41,14 +42,14 @@ function RatingBar({ label, count, total }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
     <div className="flex items-center gap-3 text-xs">
-      <span className="w-8 text-right font-bold text-rose-900/60 shrink-0">{label}★</span>
-      <div className="flex-1 h-2 bg-pink-100 rounded-full overflow-hidden">
+      <span className="w-8 text-right font-medium text-brand-muted shrink-0">{label}&#9733;</span>
+      <div className="flex-1 h-1.5 bg-brand-bg border border-brand-border/60 rounded-full overflow-hidden">
         <div
-          className="h-full bg-amber-400 rounded-full transition-all duration-500"
+          className="h-full bg-brand-accent rounded-full transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="w-6 text-rose-900/50 font-semibold shrink-0">{count}</span>
+      <span className="w-6 text-brand-muted text-right font-mono shrink-0">{count}</span>
     </div>
   );
 }
@@ -71,7 +72,7 @@ export default function ReviewSection({ productId }) {
   const [loadingReviews, setLoadingReviews] = useState(true);
 
   // eligibility
-  const [eligibility, setEligibility] = useState(null); // null | { canReview, reason, existing }
+  const [eligibility, setEligibility] = useState(null);
   const [loadingEligibility, setLoadingEligibility] = useState(false);
 
   // form state
@@ -92,13 +93,13 @@ export default function ReviewSection({ productId }) {
 
   const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
 
-  // ── Fetch reviews ────────────────────────────────────────────────────────────
+  // Fetch reviews
   const fetchReviews = useCallback(async () => {
     setLoadingReviews(true);
     try {
       const res = await axios.get(`${API_URL}/reviews/product/${productId}`);
-      setReviews(res.data.reviews);
-      setSummary(res.data.summary);
+      setReviews(res.data.reviews || []);
+      setSummary(res.data.summary || { average: 0, total: 0, starCounts: {} });
     } catch {
       // silently fail — reviews section is non-critical
     } finally {
@@ -110,7 +111,7 @@ export default function ReviewSection({ productId }) {
     fetchReviews();
   }, [fetchReviews]);
 
-  // ── Check eligibility when user logs in ──────────────────────────────────────
+  // Check review eligibility for customer
   useEffect(() => {
     if (!token || !user || user.role !== 'customer') {
       setEligibility(null);
@@ -127,7 +128,6 @@ export default function ReviewSection({ productId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user?.id, productId]);
 
-  // ── Submit new review ────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
@@ -139,19 +139,18 @@ export default function ReviewSection({ productId }) {
         { rating: formRating, comment: formComment.trim() || undefined },
         { headers: authHeader }
       );
-      setFormSuccess('Your review has been posted!');
+      setFormSuccess('Thank you. Your review has been recorded.');
       setFormRating(5);
       setFormComment('');
       setEligibility({ canReview: false, reason: 'already_reviewed' });
       await fetchReviews();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Could not submit review. Please try again.');
+      setFormError(err.response?.data?.error || 'Unable to submit review. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // ── Edit review ──────────────────────────────────────────────────────────────
   const startEdit = (review) => {
     setEditingId(review.id);
     setEditRating(review.rating);
@@ -174,15 +173,14 @@ export default function ReviewSection({ productId }) {
       setEditingId(null);
       await fetchReviews();
     } catch (err) {
-      alert(err.response?.data?.error || 'Could not update review.');
+      alert(err.response?.data?.error || 'Unable to update review.');
     } finally {
       setEditSubmitting(false);
     }
   };
 
-  // ── Delete review ────────────────────────────────────────────────────────────
   const handleDelete = async (reviewId) => {
-    if (!confirm('Delete this review?')) return;
+    if (!confirm('Are you sure you want to remove this review?')) return;
     setDeletingId(reviewId);
     try {
       await axios.delete(`${API_URL}/reviews/${reviewId}`, { headers: authHeader });
@@ -191,38 +189,44 @@ export default function ReviewSection({ productId }) {
       }
       await fetchReviews();
     } catch (err) {
-      alert(err.response?.data?.error || 'Could not delete review.');
+      alert(err.response?.data?.error || 'Unable to delete review.');
     } finally {
       setDeletingId(null);
     }
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <section className="mt-16 space-y-10">
-      {/* Header */}
-      <div className="flex flex-col items-center text-center space-y-2">
-        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-rose-600">
-          Customer Feedback
-        </span>
-        <h3 className="text-3xl font-serif font-black text-rose-950">Reviews</h3>
+    <section className="border-t border-brand-border/60 pt-16 sm:pt-20">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-8 sm:mb-10">
+        <div>
+          <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-brand-accent block mb-1">
+            Authentic Feedback
+          </span>
+          <h2 className="font-serif text-2xl sm:text-3xl text-brand-dark font-normal tracking-tight">
+            Customer Reviews
+          </h2>
+        </div>
       </div>
 
-      <div className="bg-white border border-pink-100 rounded-[2.5rem] p-6 sm:p-10 shadow-sm space-y-10">
-
-        {/* Summary row */}
+      <div className="bg-brand-surface border border-brand-border p-6 sm:p-10 space-y-10">
+        {/* Rating Summary & Distribution */}
         {!loadingReviews && summary.total > 0 && (
-          <div className="flex flex-col sm:flex-row gap-8 items-center sm:items-start">
-            {/* Big average */}
-            <div className="text-center shrink-0">
-              <p className="text-6xl font-black text-rose-950">{summary.average}</p>
-              <StarRating value={Math.round(summary.average)} readonly size="sm" />
-              <p className="text-xs text-rose-900/50 font-semibold mt-1">
-                {summary.total} {summary.total === 1 ? 'review' : 'reviews'}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center pb-8 border-b border-brand-border/60">
+            {/* Big Rating */}
+            <div className="md:col-span-4 text-center md:text-left flex flex-col items-center md:items-start space-y-1">
+              <span className="font-serif text-5xl sm:text-6xl text-brand-dark leading-none">
+                {Number(summary.average).toFixed(1)}
+              </span>
+              <div className="pt-2">
+                <StarRating value={Math.round(summary.average)} readonly size="sm" />
+              </div>
+              <p className="text-xs text-brand-muted pt-1">
+                Based on {summary.total} verified {summary.total === 1 ? 'rating' : 'ratings'}
               </p>
             </div>
-            {/* Bar breakdown */}
-            <div className="flex-1 w-full space-y-2">
+
+            {/* Distribution Bars */}
+            <div className="md:col-span-8 space-y-2 max-w-md w-full">
               {[5, 4, 3, 2, 1].map((s) => (
                 <RatingBar
                   key={s}
@@ -235,79 +239,86 @@ export default function ReviewSection({ productId }) {
           </div>
         )}
 
-        {/* Write a review form */}
+        {/* Write a Review Section */}
         {user?.role === 'customer' && (
-          <div className="border-t border-pink-50 pt-8">
+          <div className="space-y-4">
             {loadingEligibility ? (
-              <div className="flex items-center gap-2 text-sm text-rose-900/50">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Checking eligibility…
+              <div className="flex items-center gap-2 text-xs text-brand-muted">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-accent" />
+                <span>Checking purchase verification...</span>
               </div>
             ) : eligibility?.canReview ? (
-              <div className="space-y-5">
-                <h4 className="font-serif font-black text-xl text-rose-950">Write a Review</h4>
+              <div className="bg-brand-bg border border-brand-border p-6 rounded space-y-5">
+                <div>
+                  <h3 className="font-serif text-xl text-brand-dark">Share Your Experience</h3>
+                  <p className="text-xs text-brand-muted mt-1">
+                    Your feedback assists other patrons in selecting verified beauty essentials.
+                  </p>
+                </div>
 
                 {formSuccess && (
-                  <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-bold px-4 py-3 rounded-2xl">
+                  <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-3.5 py-2.5 rounded">
                     <CheckCircle className="w-4 h-4 shrink-0" />
-                    {formSuccess}
+                    <span>{formSuccess}</span>
                   </div>
                 )}
                 {formError && (
-                  <div className="bg-red-50 border border-red-100 text-red-700 text-xs font-bold px-4 py-3 rounded-2xl">
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3.5 py-2.5 rounded">
                     {formError}
                   </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-rose-950/40 uppercase tracking-widest">
-                      Your rating
+                    <label className="text-[11px] font-medium text-brand-muted uppercase tracking-wider block">
+                      Overall Rating
                     </label>
                     <StarRating value={formRating} onChange={setFormRating} />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-rose-950/40 uppercase tracking-widest">
-                      Comment <span className="normal-case font-semibold">(optional)</span>
+                    <label className="text-[11px] font-medium text-brand-muted uppercase tracking-wider block">
+                      Review Remarks <span className="normal-case text-brand-muted/70">(Optional)</span>
                     </label>
                     <textarea
                       value={formComment}
                       onChange={(e) => setFormComment(e.target.value)}
-                      placeholder="Share your experience with this product…"
+                      placeholder="Detail your experience with fragrance, texture, packaging, or performance..."
                       rows={3}
                       maxLength={1000}
-                      className="w-full px-4 py-3 bg-pink-50/20 border border-pink-100 rounded-2xl text-sm font-medium resize-none focus:outline-none focus:ring-2 focus:ring-rose-200"
+                      className="w-full px-3.5 py-2.5 bg-brand-surface border border-brand-border rounded text-xs text-brand-text placeholder:text-brand-muted/60 focus:outline-none focus:border-brand-accent resize-none"
                     />
-                    <p className="text-[10px] text-rose-900/30 text-right">
+                    <div className="text-[10px] text-brand-muted/70 text-right font-mono">
                       {formComment.length}/1000
-                    </p>
+                    </div>
                   </div>
 
-                  <button
+                  <Button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl bg-rose-900 text-white text-xs font-black uppercase tracking-wider hover:bg-rose-950 disabled:opacity-50 transition-colors"
+                    variant="primary"
+                    size="sm"
+                    className="tracking-[0.16em] uppercase text-[11px] min-h-[44px]"
                   >
                     {submitting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />
                     ) : (
-                      <Star className="w-4 h-4" />
+                      <Star className="w-3.5 h-3.5 mr-2" />
                     )}
-                    Post Review
-                  </button>
+                    Submit Review
+                  </Button>
                 </form>
               </div>
             ) : eligibility?.reason === 'already_reviewed' ? (
-              <div className="flex items-center gap-2 text-sm text-emerald-700 font-semibold bg-emerald-50 border border-emerald-100 px-4 py-3 rounded-2xl">
-                <ShieldCheck className="w-4 h-4 shrink-0" />
-                You have already reviewed this product. Find your review below to edit it.
+              <div className="flex items-center gap-2 text-xs text-brand-muted bg-brand-bg border border-brand-border p-4">
+                <ShieldCheck className="w-4 h-4 text-brand-accent shrink-0" />
+                <span>You have reviewed this product. You can update or delete your comment below.</span>
               </div>
             ) : (
-              <div className="flex items-start gap-3 text-sm text-rose-900/60 font-semibold bg-pink-50/60 border border-pink-100 px-5 py-4 rounded-2xl">
-                <Star className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+              <div className="flex items-start gap-2.5 text-xs text-brand-muted bg-brand-bg border border-brand-border p-4">
+                <ShieldCheck className="w-4 h-4 text-brand-accent shrink-0 mt-0.5" />
                 <span>
-                  Only customers who have received a delivered order for this product can leave a review.
+                  Reviews are reserved for customers with confirmed delivered orders of this item.
                 </span>
               </div>
             )}
@@ -315,23 +326,26 @@ export default function ReviewSection({ productId }) {
         )}
 
         {!user && (
-          <div className="border-t border-pink-50 pt-8 text-sm text-rose-900/50 font-semibold">
-            <a href="/login" className="text-rose-800 underline underline-offset-2 hover:text-rose-950">
-              Sign in
-            </a>{' '}
-            to leave a review.
+          <div className="text-xs text-brand-muted bg-brand-bg border border-brand-border p-4 flex items-center justify-between gap-4 flex-wrap">
+            <span>Have you purchased this item? Sign in to submit a verified product review.</span>
+            <a
+              href="/login"
+              className="text-brand-dark font-medium underline uppercase tracking-wider text-[11px] hover:text-brand-accent"
+            >
+              Sign In &rarr;
+            </a>
           </div>
         )}
 
-        {/* Reviews list */}
-        <div className="border-t border-pink-50 pt-8 space-y-6">
+        {/* Review List */}
+        <div className="space-y-6 pt-2">
           {loadingReviews ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="w-7 h-7 animate-spin text-rose-300" />
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-brand-accent" />
             </div>
           ) : reviews.length === 0 ? (
-            <p className="text-center text-sm text-rose-900/40 font-semibold py-8">
-              No reviews yet. Be the first to share your experience!
+            <p className="text-center text-xs text-brand-muted py-8 font-serif italic">
+              No reviews recorded for this product yet.
             </p>
           ) : (
             reviews.map((review) => {
@@ -342,10 +356,10 @@ export default function ReviewSection({ productId }) {
               return (
                 <div
                   key={review.id}
-                  className="flex gap-4 pb-6 border-b border-pink-50 last:border-0 last:pb-0"
+                  className="flex gap-4 pb-6 border-b border-brand-border/50 last:border-0 last:pb-0"
                 >
-                  {/* Avatar */}
-                  <div className="shrink-0 w-10 h-10 rounded-full bg-rose-900 text-white flex items-center justify-center font-bold text-sm overflow-hidden">
+                  {/* User Avatar */}
+                  <div className="w-9 h-9 rounded-full bg-brand-dark text-brand-surface flex items-center justify-center font-serif text-sm shrink-0 uppercase overflow-hidden">
                     {review.user?.profileImage ? (
                       <img
                         src={review.user.profileImage}
@@ -353,91 +367,93 @@ export default function ReviewSection({ productId }) {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      review.user?.name?.charAt(0) ?? '?'
+                      review.user?.name?.charAt(0) || 'P'
                     )}
                   </div>
 
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 space-y-1.5">
                     {isEditing ? (
-                      /* ── Edit form ── */
-                      <form onSubmit={handleEditSubmit} className="space-y-3">
+                      /* Edit Mode */
+                      <form onSubmit={handleEditSubmit} className="space-y-3 bg-brand-bg p-4 border border-brand-border">
                         <StarRating value={editRating} onChange={setEditRating} />
                         <textarea
                           value={editComment}
                           onChange={(e) => setEditComment(e.target.value)}
                           rows={2}
                           maxLength={1000}
-                          className="w-full px-4 py-2.5 border border-pink-100 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-rose-200"
+                          className="w-full px-3 py-2 text-xs bg-brand-surface border border-brand-border rounded focus:outline-none focus:border-brand-accent resize-none"
                         />
                         <div className="flex gap-2">
-                          <button
+                          <Button
                             type="submit"
                             disabled={editSubmitting}
-                            className="px-5 py-2 rounded-xl bg-rose-900 text-white text-xs font-black uppercase tracking-wider disabled:opacity-50 hover:bg-rose-950 transition-colors"
+                            variant="primary"
+                            size="sm"
+                            className="min-h-[38px] text-[10px] uppercase tracking-wider"
                           >
-                            {editSubmitting ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              'Save'
-                            )}
-                          </button>
-                          <button
+                            {editSubmitting ? 'Saving...' : 'Save'}
+                          </Button>
+                          <Button
                             type="button"
                             onClick={cancelEdit}
-                            className="px-5 py-2 rounded-xl border border-pink-100 text-xs font-black uppercase tracking-wider text-rose-900 hover:bg-pink-50 transition-colors"
+                            variant="secondary"
+                            size="sm"
+                            className="min-h-[38px] text-[10px] uppercase tracking-wider"
                           >
                             Cancel
-                          </button>
+                          </Button>
                         </div>
                       </form>
                     ) : (
-                      /* ── Read view ── */
+                      /* Read Mode */
                       <>
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm text-rose-950">
-                              {review.user?.name ?? 'Customer'}
+                            <span className="text-xs font-medium text-brand-dark">
+                              {review.user?.name || 'Verified Customer'}
                             </span>
-                            <StarRating value={review.rating} readonly size="sm" />
+                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                              <ShieldCheck className="w-3 h-3" />
+                              <span>Verified Order</span>
+                            </span>
                           </div>
-                          <span className="text-[10px] text-rose-900/40 font-semibold">
+                          <span className="text-[10px] text-brand-muted font-mono">
                             {formatDate(review.updatedAt || review.createdAt)}
                           </span>
                         </div>
 
+                        <div className="pt-0.5">
+                          <StarRating value={review.rating} readonly size="sm" />
+                        </div>
+
                         {review.comment && (
-                          <p className="mt-1.5 text-sm text-rose-900/70 leading-relaxed">
+                          <p className="text-xs text-brand-muted leading-relaxed pt-1">
                             {review.comment}
                           </p>
                         )}
 
+                        {/* Customer & Admin Controls */}
                         {(isOwn || isAdmin) && (
-                          <div className="flex gap-3 mt-2">
+                          <div className="flex items-center gap-3 pt-2">
                             {isOwn && (
                               <button
                                 type="button"
                                 onClick={() => startEdit(review)}
-                                className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-rose-600 hover:text-rose-900 transition-colors"
+                                className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-brand-accent hover:underline cursor-pointer"
                               >
                                 <Pencil className="w-3 h-3" />
-                                Edit
+                                <span>Edit</span>
                               </button>
                             )}
-                            {(isOwn || isAdmin) && (
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(review.id)}
-                                disabled={deletingId === review.id}
-                                className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-rose-400 hover:text-red-600 transition-colors disabled:opacity-50"
-                              >
-                                {deletingId === review.id ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-3 h-3" />
-                                )}
-                                Delete
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(review.id)}
+                              disabled={deletingId === review.id}
+                              className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-red-600 hover:underline cursor-pointer disabled:opacity-50"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>{deletingId === review.id ? 'Deleting...' : 'Delete'}</span>
+                            </button>
                           </div>
                         )}
                       </>

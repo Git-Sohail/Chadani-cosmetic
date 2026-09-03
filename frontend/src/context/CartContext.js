@@ -1,8 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
+import { getActivePrice, DHARAN_DELIVERY_FEE, calculateOrderTotal } from '../utils/currency';
 
 const CartContext = createContext();
 
@@ -10,10 +11,56 @@ export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const { token, API_URL } = useAuth();
+  const syncingRef = useRef(false);
 
-  // Load cart items (memoized to avoid warning/re-renders)
+  // Load cart items with safe guest-cart merging
   const fetchCart = useCallback(async () => {
     if (token && token !== 'mock-customer-token' && token !== 'mock-admin-token') {
+      const localCartStr = typeof window !== 'undefined' ? localStorage.getItem('bb_cart') : null;
+      let localGuestItems = [];
+      if (localCartStr) {
+        try {
+          const parsed = JSON.parse(localCartStr);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            localGuestItems = parsed;
+          }
+        } catch (e) {
+          console.error('Failed to parse local guest cart:', e);
+        }
+      }
+
+      // If guest cart exists, merge with server cart
+      if (localGuestItems.length > 0 && !syncingRef.current) {
+        syncingRef.current = true;
+        try {
+          const itemsPayload = localGuestItems
+            .map((item) => ({
+              productId: item.productId || item.product?.id,
+              quantity: item.quantity || 1,
+            }))
+            .filter((item) => Boolean(item.productId));
+
+          if (itemsPayload.length > 0) {
+            const res = await axios.post(
+              `${API_URL}/cart/merge`,
+              { items: itemsPayload },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            // Only clear local storage after server confirms successful synchronization
+            localStorage.removeItem('bb_cart');
+            setCartItems(res.data);
+            setLoading(false);
+            syncingRef.current = false;
+            return;
+          }
+        } catch (mergeError) {
+          console.error('Error merging guest cart on backend:', mergeError);
+          // Do not delete local cart so guest items are not lost if server fails
+        } finally {
+          syncingRef.current = false;
+        }
+      }
+
       try {
         const res = await axios.get(`${API_URL}/cart`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -24,9 +71,15 @@ export function CartProvider({ children }) {
       }
     } else {
       // Offline fallback: load from localStorage
-      const localCart = localStorage.getItem('bb_cart');
-      if (localCart) {
-        setCartItems(JSON.parse(localCart));
+      if (typeof window !== 'undefined') {
+        const localCart = localStorage.getItem('bb_cart');
+        if (localCart) {
+          try {
+            setCartItems(JSON.parse(localCart));
+          } catch {
+            setCartItems([]);
+          }
+        }
       }
     }
     setLoading(false);
@@ -36,10 +89,12 @@ export function CartProvider({ children }) {
     fetchCart();
   }, [fetchCart]);
 
-  // Sync offline cart to localStorage
+  // Sync offline cart to localStorage only for unauthenticated guest sessions
   useEffect(() => {
     if (!token || token === 'mock-customer-token' || token === 'mock-admin-token') {
-      localStorage.setItem('bb_cart', JSON.stringify(cartItems));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bb_cart', JSON.stringify(cartItems));
+      }
     }
   }, [cartItems, token]);
 
@@ -125,13 +180,17 @@ export function CartProvider({ children }) {
 
   const clearCart = async () => {
     setCartItems([]);
-    if (!token || token === 'mock-customer-token' || token === 'mock-admin-token') {
+    if (typeof window !== 'undefined') {
       localStorage.removeItem('bb_cart');
     }
   };
 
-  const cartSubtotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-  const cartTotal = cartSubtotal; // Flat totals (can add shipping or discount logic)
+  const cartSubtotal = cartItems.reduce(
+    (acc, item) => acc + (getActivePrice(item.product) * item.quantity),
+    0
+  );
+  const deliveryFee = cartItems.length > 0 ? DHARAN_DELIVERY_FEE : 0;
+  const cartTotal = calculateOrderTotal(cartSubtotal);
 
   return (
     <CartContext.Provider value={{
@@ -142,6 +201,7 @@ export function CartProvider({ children }) {
       deleteCartItem,
       clearCart,
       cartSubtotal,
+      deliveryFee,
       cartTotal,
       fetchCart
     }}>

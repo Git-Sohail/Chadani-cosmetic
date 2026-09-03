@@ -159,6 +159,13 @@ const sendOrderConfirmationEmail = async (order, customerEmail) => {
     `;
   });
 
+  const productsSubtotal = (order.orderItems || []).reduce(
+    (sum, item) => sum + (item.price * item.quantity),
+    0
+  );
+  const deliveryFee =
+    order.totalAmount > productsSubtotal ? order.totalAmount - productsSubtotal : 100;
+
   const html = `
     <div style="font-family: 'Playfair Display', 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 40px 20px; background-color: #fffafb; border: 1px solid #ffe4e6; border-radius: 24px; color: #4c0519;">
       <div style="text-align: center; margin-bottom: 30px;">
@@ -192,6 +199,16 @@ const sendOrderConfirmationEmail = async (order, customerEmail) => {
           </tbody>
           <tfoot>
             <tr>
+              <td colspan="2"></td>
+              <td style="padding: 8px 12px; text-align: right; color: #4c0519; font-size: 13px;">Products Subtotal:</td>
+              <td style="padding: 8px 12px; text-align: right; font-weight: bold; font-size: 13px; color: #4c0519;">${formatNpr(productsSubtotal)}</td>
+            </tr>
+            <tr>
+              <td colspan="2"></td>
+              <td style="padding: 8px 12px; text-align: right; color: #4c0519; font-size: 13px;">Dharan Delivery:</td>
+              <td style="padding: 8px 12px; text-align: right; font-weight: bold; font-size: 13px; color: #4c0519;">${formatNpr(deliveryFee)}</td>
+            </tr>
+            <tr style="border-top: 2px solid #fda4af;">
               <td colspan="2"></td>
               <td style="padding: 12px; text-align: right; font-weight: bold; color: #4c0519; font-size: 14px;">Total Amount:</td>
               <td style="padding: 12px; text-align: right; font-weight: 900; font-size: 18px; color: #9f1239;">${formatNpr(order.totalAmount)}</td>

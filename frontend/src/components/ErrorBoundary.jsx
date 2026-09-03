@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -33,12 +34,12 @@ export default class ErrorBoundary extends React.Component {
               >
                 Refresh Page
               </button>
-              <a
+              <Link
                 href="/"
                 className="px-6 py-3 rounded-2xl border border-pink-100 text-rose-900 text-xs font-black uppercase tracking-wider hover:bg-pink-50 transition-colors"
               >
                 Go Home
-              </a>
+              </Link>
             </div>
             {process.env.NODE_ENV !== 'production' && this.state.error && (
               <details className="text-left mt-4">

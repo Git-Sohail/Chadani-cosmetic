@@ -15,19 +15,23 @@ export default function Button({
   ...props
 }) {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-luxury-rose-gold/50 focus:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100';
+    'inline-flex items-center justify-center font-medium tracking-wide transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
 
   const variants = {
-    primary: 'bg-luxury-burgundy hover:bg-luxury-burgundy-dark text-white shadow-sm hover:shadow-md border border-luxury-burgundy',
-    secondary: 'bg-luxury-pink hover:bg-luxury-rose-gold/20 text-luxury-burgundy border border-luxury-pink',
-    outline: 'bg-transparent hover:bg-luxury-pink text-luxury-burgundy border border-luxury-burgundy/40',
-    text: 'bg-transparent hover:bg-luxury-pink text-luxury-burgundy',
+    primary:
+      'bg-brand-dark text-brand-surface hover:bg-brand-accent border border-brand-dark hover:border-brand-accent shadow-sm',
+    secondary:
+      'bg-transparent text-brand-text hover:bg-brand-surface border border-brand-border hover:border-brand-accent shadow-none',
+    outline:
+      'bg-transparent text-brand-dark hover:bg-brand-dark hover:text-brand-surface border border-brand-dark/80',
+    text:
+      'bg-transparent text-brand-text hover:text-brand-accent p-0 border-0 shadow-none',
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-5 py-2.5 text-sm',
-    lg: 'px-7 py-3 text-base',
+    sm: 'px-3.5 py-1.5 text-xs rounded-sm',
+    md: 'px-5 py-2.5 text-xs sm:text-sm rounded',
+    lg: 'px-7 py-3.5 text-sm sm:text-base rounded',
   };
 
   return (

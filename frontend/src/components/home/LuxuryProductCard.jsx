@@ -3,12 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Star, Eye } from 'lucide-react';
+import { Heart, ShoppingBag, Eye } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useToast } from '../Toast';
-import { formatPrice } from '../../utils/currency';
+import { formatPrice, getProductPricing } from '../../utils/currency';
 
 export default function LuxuryProductCard({ product }) {
   const { addToCart } = useCart();
@@ -37,44 +36,39 @@ export default function LuxuryProductCard({ product }) {
     }
   };
 
-  const discount =
-    product.oldPrice && product.oldPrice > product.price
-      ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
-      : null;
+  const pricing = getProductPricing(product);
 
   return (
-    <motion.article
-      className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-luxury-burgundy/8 transition-all duration-400 flex flex-col h-full border border-luxury-pink"
-      whileHover={{ y: -5 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <div className="relative aspect-[4/5] overflow-hidden bg-luxury-pink">
-        {(product.isSale || discount) && (
-          <span className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full bg-luxury-burgundy text-white text-[10px] font-medium uppercase tracking-wider">
-            {discount ? `-${discount}%` : 'Sale'}
+    <div className="group relative bg-brand-surface border border-brand-border/75 flex flex-col h-full transition-all duration-300 hover:border-brand-accent/60">
+      {/* Product Image Container */}
+      <div className="relative aspect-[4/5] overflow-hidden bg-brand-bg">
+        {/* Sale / Discount Badge */}
+        {(product.isSale || pricing.hasDiscount) && (
+          <span className="absolute top-3 left-3 z-10 px-2 py-0.5 bg-brand-dark text-brand-surface text-[10px] font-medium tracking-[0.16em] uppercase">
+            {pricing.discountPercent ? `-${pricing.discountPercent}%` : 'Special'}
           </span>
         )}
 
-        <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
-          <motion.button
+        {/* Action icons (Wishlist & Quick View) */}
+        <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+          <button
             type="button"
             onClick={handleWishlist}
-            className="w-9 h-9 rounded-full glass-card flex items-center justify-center cursor-pointer"
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.95 }}
+            className="w-8 h-8 bg-brand-surface/90 border border-brand-border flex items-center justify-center text-brand-dark hover:text-brand-accent hover:border-brand-accent transition-colors cursor-pointer"
             aria-label="Add to wishlist"
           >
-            <Heart className={`w-4 h-4 ${wishlisted ? 'fill-luxury-burgundy text-luxury-burgundy' : 'text-luxury-burgundy'}`} />
-          </motion.button>
+            <Heart className={`w-3.5 h-3.5 ${wishlisted ? 'fill-brand-accent text-brand-accent' : ''}`} />
+          </button>
           <Link
             href={`/shop/${product.id}`}
-            className="w-9 h-9 rounded-full glass-card flex items-center justify-center"
-            aria-label="Quick view"
+            className="w-8 h-8 bg-brand-surface/90 border border-brand-border flex items-center justify-center text-brand-dark hover:text-brand-accent hover:border-brand-accent transition-colors"
+            aria-label="View product details"
           >
-            <Eye className="w-4 h-4 text-luxury-burgundy" />
+            <Eye className="w-3.5 h-3.5" />
           </Link>
         </div>
 
+        {/* Product Link & Image */}
         <Link href={`/shop/${product.id}`} className="block w-full h-full">
           {product.image ? (
             <Image
@@ -82,52 +76,54 @@ export default function LuxuryProductCard({ product }) {
               alt={product.name}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+              className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-103"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center font-serif text-luxury-burgundy/35 italic text-sm">
-              {product.category?.name || 'Beauty'}
+            <div className="w-full h-full flex items-center justify-center font-serif text-brand-muted/40 italic text-sm">
+              {product.category?.name || 'Product'}
             </div>
           )}
         </Link>
 
+        {/* Quick Add To Cart Drawer */}
         <div className="absolute inset-x-0 bottom-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-          <motion.button
+          <button
             type="button"
             onClick={handleCart}
             disabled={product.stock <= 0}
-            className="w-full py-2.5 rounded-full bg-luxury-burgundy text-white text-xs font-medium flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer hover:bg-luxury-burgundy-dark transition-colors"
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
+            className="w-full py-2 bg-brand-dark text-brand-surface text-[11px] font-medium tracking-[0.16em] uppercase flex items-center justify-center gap-2 hover:bg-brand-accent transition-colors disabled:opacity-50 cursor-pointer"
           >
             <ShoppingBag className="w-3.5 h-3.5" />
-            {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
-          </motion.button>
+            <span>{product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}</span>
+          </button>
         </div>
       </div>
 
-      <div className="p-4 flex-1 flex flex-col">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] uppercase tracking-[0.12em] text-luxury-rose-gold font-medium">
+      {/* Card Information */}
+      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+        <div>
+          <span className="text-[10px] uppercase tracking-[0.2em] text-brand-accent font-medium block mb-1">
             {product.category?.name || 'Beauty'}
           </span>
-          <div className="flex items-center gap-1 text-luxury-rose-gold">
-            <Star className="w-3 h-3 fill-current" />
-            <span className="text-[11px] text-luxury-text/65">{product.rating || '4.9'}</span>
-          </div>
+          <Link href={`/shop/${product.id}`}>
+            <h3 className="font-serif text-base sm:text-lg text-brand-dark leading-snug line-clamp-2 hover:text-brand-accent transition-colors">
+              {product.name}
+            </h3>
+          </Link>
         </div>
-        <Link href={`/shop/${product.id}`}>
-          <h3 className="font-serif text-base text-luxury-text leading-snug line-clamp-2 group-hover:text-luxury-burgundy transition-colors">
-            {product.name}
-          </h3>
-        </Link>
-        <div className="mt-auto pt-3 flex items-end gap-2">
-          {product.oldPrice && (
-            <span className="text-xs text-luxury-text/35 line-through">{formatPrice(product.oldPrice)}</span>
+
+        {/* Pricing */}
+        <div className="pt-3 border-t border-brand-border/40 mt-3 flex items-baseline gap-2">
+          <span className="text-base sm:text-lg font-medium text-brand-dark">
+            {formatPrice(pricing.activePrice)}
+          </span>
+          {pricing.oldPrice && (
+            <span className="text-xs text-brand-muted/60 line-through">
+              {formatPrice(pricing.oldPrice)}
+            </span>
           )}
-          <span className="text-lg font-medium text-luxury-burgundy">{formatPrice(product.price)}</span>
         </div>
       </div>
-    </motion.article>
+    </div>
   );
 }

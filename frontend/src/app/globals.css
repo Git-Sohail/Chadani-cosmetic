@@ -1,19 +1,42 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8eef2;
-  --foreground: #2a2a2a;
+  /* Phase 2: Controlled Luxury-Neutral Palette */
+  --brand-bg: #F7F3EC;
+  --brand-surface: #FFFDF9;
+  --brand-card: #FFFFFF;
+  --brand-text: #1F1B18;
+  --brand-muted: #756B63;
+  --brand-accent: #8A6A4B;
+  --brand-border: #DDD4C8;
+  --brand-border-subtle: #E8E2D9;
+  --brand-dark: #171411;
+
+  /* Backward-compatible aliases for un-redesigned inner pages */
+  --background: #F7F3EC;
+  --foreground: #1F1B18;
   --nav-height-mobile: 64px;
   --nav-height-desktop: 76px;
-  --luxury-burgundy: #7a0d36;
-  --luxury-burgundy-dark: #5a0828;
-  --luxury-rose-gold: #d9b08c;
-  --luxury-pink: #f8eef2;
-  --luxury-white: #ffffff;
-  --luxury-text: #2a2a2a;
+  --luxury-burgundy: #171411;
+  --luxury-burgundy-dark: #0F0D0B;
+  --luxury-rose-gold: #8A6A4B;
+  --luxury-pink: #F7F3EC;
+  --luxury-white: #FFFDF9;
+  --luxury-text: #1F1B18;
 }
 
 @theme inline {
+  --color-brand-bg: var(--brand-bg);
+  --color-brand-surface: var(--brand-surface);
+  --color-brand-card: var(--brand-card);
+  --color-brand-text: var(--brand-text);
+  --color-brand-muted: var(--brand-muted);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-border: var(--brand-border);
+  --color-brand-border-subtle: var(--brand-border-subtle);
+  --color-brand-dark: var(--brand-dark);
+
+  /* Legacy mappings */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-luxury-burgundy: var(--luxury-burgundy);
@@ -22,57 +45,32 @@
   --color-luxury-pink: var(--luxury-pink);
   --color-luxury-white: var(--luxury-white);
   --color-luxury-text: var(--luxury-text);
-  --font-sans: var(--font-body), sans-serif;
-  --font-serif: var(--font-heading), serif;
+
+  --font-sans: var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: var(--font-heading), "Times New Roman", Garamond, serif;
+
   --animate-spin-slow: spin 20s linear infinite;
-  --animate-fadeIn: fadeIn 0.4s ease-out forwards;
-  --animate-float: float 5s ease-in-out infinite;
+  --animate-fadeIn: fadeIn 0.3s ease-out forwards;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: var(--brand-bg);
+  color: var(--brand-text);
   overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 24px rgba(122, 13, 54, 0.05);
-}
-
-.glass-nav {
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(217, 176, 140, 0.2);
-  box-shadow: 0 2px 20px rgba(122, 13, 54, 0.05);
-}
-
-.luxury-gradient-bg {
-  background: linear-gradient(160deg, #f8eef2 0%, #ffffff 50%, #f8eef2 100%);
-}
-
-.section-padding {
-  @apply py-12 sm:py-14 lg:py-16 px-4 sm:px-6 lg:px-8;
-}
-
+/* Subtle editorial scrollbar */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #f8eef2; }
+::-webkit-scrollbar-track { background: #F7F3EC; }
 ::-webkit-scrollbar-thumb {
-  background: #d9b08c;
+  background: #DDD4C8;
   border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb:hover { background: #7a0d36; }
+::-webkit-scrollbar-thumb:hover { background: #8A6A4B; }

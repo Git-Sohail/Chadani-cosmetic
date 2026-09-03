@@ -65,60 +65,6 @@ export default function AdminLayout({ children }) {
 
   if (!user || user.role !== 'admin') return null;
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full justify-between">
-      <div className="p-6 space-y-8">
-        <div className="space-y-1">
-          <Logo size="md" href="/admin" />
-          <p className="text-[9px] text-rose-900/40 font-black uppercase tracking-[0.25em] pl-1">Admin Suite</p>
-        </div>
-        <nav className="space-y-1.5" role="navigation" aria-label="Admin navigation">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive = item.match(pathname);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive ? 'page' : undefined}
-                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
-                  isActive ? 'bg-rose-900 text-white shadow-lg shadow-rose-900/10' : 'text-rose-950/60 hover:text-rose-950 hover:bg-pink-50/40'
-                }`}
-              >
-                <Icon className="w-4 h-4" aria-hidden />
-                <span>{item.name}</span>
-                {item.href === '/admin/messages' && chatUnread > 0 && (
-                  <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[9px] font-black flex items-center justify-center" aria-label={`${chatUnread} unread messages`}>
-                    {chatUnread > 9 ? '9+' : chatUnread}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-      <div className="p-4 border-t border-pink-50 bg-pink-50/10">
-        <div className="flex items-center gap-3 px-2 mb-3">
-          <div className="w-9 h-9 bg-rose-900 text-white rounded-full flex items-center justify-center font-bold shadow-md" aria-hidden>
-            {user.name.charAt(0)}
-          </div>
-          <div className="overflow-hidden">
-            <span className="font-extrabold text-xs text-rose-950 block truncate">{user.name}</span>
-            <span className="text-[10px] text-rose-900/40 font-bold block">Administrator</span>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
-        >
-          <LogOut className="w-4 h-4" aria-hidden />
-          <span>Logout</span>
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen flex bg-[#fffafb] text-rose-950 font-sans antialiased">
       {/* Mobile overlay */}
@@ -132,7 +78,12 @@ export default function AdminLayout({ children }) {
 
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-64 border-r border-pink-100/70 bg-white flex-col justify-between shrink-0 h-screen sticky top-0 z-50">
-        <SidebarContent />
+        <SidebarContent
+          pathname={pathname}
+          chatUnread={chatUnread}
+          user={user}
+          handleLogout={handleLogout}
+        />
       </aside>
 
       {/* Mobile sidebar drawer */}
@@ -150,7 +101,12 @@ export default function AdminLayout({ children }) {
         >
           <X className="w-5 h-5" />
         </button>
-        <SidebarContent />
+        <SidebarContent
+          pathname={pathname}
+          chatUnread={chatUnread}
+          user={user}
+          handleLogout={handleLogout}
+        />
       </aside>
 
       {/* Main content */}
@@ -179,6 +135,70 @@ export default function AdminLayout({ children }) {
         <main className="flex-grow overflow-y-auto custom-scrollbar" id="main-content">
           <div className="p-4 sm:p-6 lg:p-10 max-w-7xl w-full mx-auto">{children}</div>
         </main>
+      </div>
+    </div>
+  );
+}
+
+function SidebarContent({ pathname, chatUnread, user, handleLogout }) {
+  return (
+    <div className="flex flex-col h-full justify-between">
+      <div className="p-6 space-y-8">
+        <div className="space-y-1">
+          <Logo size="md" href="/admin" />
+          <p className="text-[9px] text-rose-900/40 font-black uppercase tracking-[0.25em] pl-1">Admin Suite</p>
+        </div>
+        <nav className="space-y-1.5" role="navigation" aria-label="Admin navigation">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.match(pathname);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? 'page' : undefined}
+                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
+                  isActive
+                    ? 'bg-rose-900 text-white shadow-lg shadow-rose-900/10'
+                    : 'text-rose-950/60 hover:text-rose-950 hover:bg-pink-50/40'
+                }`}
+              >
+                <Icon className="w-4 h-4" aria-hidden />
+                <span>{item.name}</span>
+                {item.href === '/admin/messages' && chatUnread > 0 && (
+                  <span
+                    className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[9px] font-black flex items-center justify-center"
+                    aria-label={`${chatUnread} unread messages`}
+                  >
+                    {chatUnread > 9 ? '9+' : chatUnread}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+      <div className="p-4 border-t border-pink-50 bg-pink-50/10">
+        <div className="flex items-center gap-3 px-2 mb-3">
+          <div
+            className="w-9 h-9 bg-rose-900 text-white rounded-full flex items-center justify-center font-bold shadow-md"
+            aria-hidden
+          >
+            {user?.name ? user.name.charAt(0) : 'A'}
+          </div>
+          <div className="overflow-hidden">
+            <span className="font-extrabold text-xs text-rose-950 block truncate">{user?.name}</span>
+            <span className="text-[10px] text-rose-900/40 font-bold block">Administrator</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+        >
+          <LogOut className="w-4 h-4" aria-hidden />
+          <span>Logout</span>
+        </button>
       </div>
     </div>
   );

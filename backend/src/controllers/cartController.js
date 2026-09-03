@@ -11,6 +11,7 @@ const getCart = async (req, res) => {
             id: true,
             name: true,
             price: true,
+            discountPrice: true,
             oldPrice: true,
             image: true,
             stock: true,
@@ -140,9 +141,96 @@ const deleteCartItem = async (req, res) => {
   }
 };
 
+const mergeCart = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { items } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      const currentCart = await prisma.cartItem.findMany({
+        where: { userId },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              discountPrice: true,
+              oldPrice: true,
+              image: true,
+              stock: true,
+              category: { select: { name: true } }
+            }
+          }
+        }
+      });
+      return res.json(currentCart);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      for (const item of items) {
+        const productId = item.productId || item.product?.id;
+        const rawQty = parseInt(item.quantity);
+        const qty = Number.isInteger(rawQty) && rawQty > 0 ? rawQty : 1;
+        if (!productId) continue;
+
+        const product = await tx.product.findUnique({ where: { id: productId } });
+        if (!product || product.stock <= 0) continue;
+
+        const existingCartItem = await tx.cartItem.findUnique({
+          where: {
+            userId_productId: { userId, productId }
+          }
+        });
+
+        if (existingCartItem) {
+          const mergedQty = Math.min(product.stock, existingCartItem.quantity + qty);
+          await tx.cartItem.update({
+            where: { id: existingCartItem.id },
+            data: { quantity: mergedQty }
+          });
+        } else {
+          const initialQty = Math.min(product.stock, qty);
+          await tx.cartItem.create({
+            data: {
+              userId,
+              productId,
+              quantity: initialQty
+            }
+          });
+        }
+      }
+    });
+
+    const updatedCart = await prisma.cartItem.findMany({
+      where: { userId },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            discountPrice: true,
+            oldPrice: true,
+            image: true,
+            stock: true,
+            category: { select: { name: true } }
+          }
+        }
+      }
+    });
+
+    res.json(updatedCart);
+  } catch (error) {
+    console.error('Merge cart error:', error);
+    res.status(500).json({ error: 'Server error merging cart items.' });
+  }
+};
+
 module.exports = {
   getCart,
   addToCart,
   updateCartItem,
-  deleteCartItem
+  deleteCartItem,
+  mergeCart
 };

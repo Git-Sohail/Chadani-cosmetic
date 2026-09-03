@@ -1,21 +1,22 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Star, ChevronLeft, ChevronRight, Quote, MessageSquare } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Star, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import axios from 'axios';
 import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-function StarRow({ rating, size = 'sm' }) {
-  const dim = size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4';
+function StarRow({ rating }) {
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-1" aria-label={`Rating: ${rating} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((s) => (
         <Star
           key={s}
-          className={`${dim} transition-colors ${
-            s <= rating ? 'fill-amber-400 text-amber-400' : 'text-rose-200 fill-rose-100'
+          className={`w-3.5 h-3.5 ${
+            s <= rating
+              ? 'fill-brand-accent text-brand-accent'
+              : 'fill-transparent text-brand-border'
           }`}
         />
       ))}
@@ -24,58 +25,52 @@ function StarRow({ rating, size = 'sm' }) {
 }
 
 function ReviewCard({ review }) {
-  const name = review.user?.name || 'Customer';
-  const avatar = review.user?.profileImage;
+  const name = review.user?.name || 'Verified Customer';
   const initial = name.charAt(0).toUpperCase();
   const productName = review.product?.name;
   const productImage = review.product?.image;
 
   return (
-    <div className="relative bg-white/70 backdrop-blur-md border border-pink-100/80 rounded-[1.75rem] p-6 sm:p-7 shadow-lg shadow-rose-900/5 flex flex-col h-full group hover:shadow-xl hover:shadow-rose-900/8 transition-all duration-300">
-      {/* Glassmorphism accent */}
-      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#B76E79]/10 to-transparent rounded-[1.75rem] pointer-events-none" />
-
-      {/* Quote icon */}
-      <Quote className="w-7 h-7 text-[#B76E79]/25 mb-4 shrink-0" />
-
-      {/* Rating */}
-      <StarRow rating={review.rating} />
-
-      {/* Comment */}
-      <p className="mt-3 text-sm text-rose-950/75 font-medium leading-relaxed flex-1 line-clamp-4 italic">
-        &ldquo;{review.comment}&rdquo;
-      </p>
-
-      {/* Product pill */}
-      {productName && (
-        <div className="mt-4 flex items-center gap-2">
-          {productImage && (
-            <div className="w-7 h-7 rounded-lg overflow-hidden border border-pink-100 shrink-0">
-              <img src={productImage} alt="" className="w-full h-full object-cover" />
-            </div>
+    <div className="bg-brand-surface border border-brand-border p-6 sm:p-7 flex flex-col justify-between h-full space-y-6">
+      <div className="space-y-4">
+        {/* Rating & Product Tag */}
+        <div className="flex items-center justify-between gap-2">
+          <StarRow rating={review.rating} />
+          {productName && (
+            <span className="text-[10px] uppercase tracking-[0.16em] text-brand-accent truncate max-w-[160px]">
+              {productName}
+            </span>
           )}
-          <span className="text-[10px] font-black uppercase tracking-wider text-[#7A003C]/60 truncate">
-            {productName}
-          </span>
         </div>
-      )}
 
-      {/* Divider */}
-      <div className="my-4 h-px bg-gradient-to-r from-transparent via-pink-200/60 to-transparent" />
+        {/* Comment */}
+        <p className="font-serif text-base sm:text-lg text-brand-dark leading-relaxed italic font-normal">
+          &ldquo;{review.comment}&rdquo;
+        </p>
+      </div>
 
-      {/* Author */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full border-2 border-[#B76E79]/20 overflow-hidden bg-gradient-to-br from-[#7A003C] to-[#B76E79] text-white flex items-center justify-center font-black text-sm shrink-0">
-          {avatar
-            ? <img src={avatar} alt={name} className="w-full h-full object-cover" />
-            : initial}
+      {/* Author & Verification */}
+      <div className="pt-4 border-t border-brand-border/60 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full border border-brand-border bg-brand-bg text-brand-dark flex items-center justify-center font-medium text-xs">
+            {initial}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-brand-dark uppercase tracking-wider">{name}</p>
+            <p className="text-[10px] text-brand-muted">
+              {new Date(review.createdAt).toLocaleDateString(undefined, {
+                month: 'short',
+                year: 'numeric',
+              })}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-black text-rose-950 truncate">{name}</p>
-          <p className="text-[10px] text-rose-900/40 font-medium">
-            {new Date(review.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
-          </p>
-        </div>
+
+        {productImage && (
+          <div className="w-8 h-8 border border-brand-border overflow-hidden shrink-0">
+            <img src={productImage} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -83,17 +78,19 @@ function ReviewCard({ review }) {
 
 function EmptyReviews() {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-      <div className="w-20 h-20 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center mb-5">
-        <MessageSquare className="w-9 h-9 text-rose-200" />
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center bg-brand-surface border border-brand-border">
+      <div className="w-12 h-12 border border-brand-border flex items-center justify-center mb-4 bg-brand-bg text-brand-accent">
+        <MessageSquare className="w-5 h-5" />
       </div>
-      <h3 className="font-serif font-black text-xl text-rose-950 mb-2">No customer reviews yet</h3>
-      <p className="text-sm text-rose-900/50 font-medium max-w-sm leading-relaxed">
-        Be the first to review our products after your purchase.
+      <h3 className="font-serif text-xl text-brand-dark mb-1">Customer Impressions</h3>
+      <p className="text-xs sm:text-sm text-brand-muted max-w-sm leading-relaxed">
+        Our customer reviews will appear here as verified shoppers share their experiences.
       </p>
-      <Link href="/shop"
-        className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-[#7A003C] text-white text-xs font-black uppercase tracking-wider rounded-2xl hover:bg-[#5a002c] transition-colors">
-        Shop & Review
+      <Link
+        href="/shop"
+        className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-brand-dark text-brand-surface text-xs font-medium uppercase tracking-[0.16em] hover:bg-brand-accent transition-colors"
+      >
+        Explore Collection
       </Link>
     </div>
   );
@@ -106,7 +103,8 @@ export default function ReviewsCarousel() {
   const perPage = 3;
 
   useEffect(() => {
-    axios.get(`${API_URL}/reviews/latest`)
+    axios
+      .get(`${API_URL}/reviews/latest`)
       .then((res) => setReviews(res.data.reviews || []))
       .catch(() => setReviews([]))
       .finally(() => setLoading(false));
@@ -119,71 +117,66 @@ export default function ReviewsCarousel() {
   const next = () => setPage((p) => (p === totalPages - 1 ? 0 : p + 1));
 
   return (
-    <section id="reviews" className="section-padding bg-luxury-pink/40 overflow-hidden">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
-          <span className="inline-block px-3 py-1 rounded-full bg-luxury-burgundy/8 text-luxury-burgundy text-[10px] font-medium uppercase tracking-[0.2em] mb-3 border border-luxury-burgundy/10">
-            Customer Testimonials
-          </span>
-          <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-luxury-text font-medium mt-1">
-            What Our Customers Say
-          </h2>
-          <p className="text-sm text-luxury-text/50 font-light mt-2">
-            Real reviews from verified purchases.
-          </p>
+    <section id="reviews" className="py-16 sm:py-20 lg:py-24 bg-brand-bg border-b border-brand-border/60">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 sm:mb-12 border-b border-brand-border/60 pb-5">
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-brand-accent block mb-2">
+              Community Voices
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-brand-dark font-normal tracking-tight">
+              Customer Experiences
+            </h2>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2 self-start sm:self-end">
+              <button
+                type="button"
+                onClick={prev}
+                aria-label="Previous reviews"
+                className="w-8 h-8 border border-brand-border bg-brand-surface flex items-center justify-center text-brand-dark hover:border-brand-accent hover:text-brand-accent transition-colors cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-mono text-brand-muted px-2">
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={next}
+                aria-label="Next reviews"
+                className="w-8 h-8 border border-brand-border bg-brand-surface flex items-center justify-center text-brand-dark hover:border-brand-accent hover:text-brand-accent transition-colors cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white/70 border border-pink-100 rounded-[1.75rem] p-6 h-64 animate-pulse space-y-3">
-                <div className="w-20 h-3 bg-pink-100 rounded" />
-                <div className="w-full h-3 bg-pink-100 rounded" />
-                <div className="w-3/4 h-3 bg-pink-100 rounded" />
-                <div className="w-1/2 h-3 bg-pink-100 rounded" />
+              <div
+                key={i}
+                className="bg-brand-surface border border-brand-border p-6 h-56 animate-pulse space-y-4"
+              >
+                <div className="w-24 h-3 bg-brand-border/60" />
+                <div className="w-full h-3 bg-brand-border/40" />
+                <div className="w-4/5 h-3 bg-brand-border/40" />
+                <div className="w-1/2 h-3 bg-brand-border/40 pt-4" />
               </div>
             ))}
           </div>
         ) : reviews.length === 0 ? (
           <EmptyReviews />
         ) : (
-          <>
-            {/* Cards grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-              {visible.map((review) => (
-                <ReviewCard key={review.id} review={review} />
-              ))}
-            </div>
-
-            {/* Pagination — only if more than 3 reviews */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-4 mt-10">
-                <button type="button" onClick={prev} aria-label="Previous"
-                  className="w-10 h-10 rounded-full border border-pink-100 bg-white flex items-center justify-center hover:bg-[#7A003C] hover:text-white hover:border-[#7A003C] transition-all text-rose-900/60">
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-
-                <div className="flex gap-1.5">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button key={i} type="button" onClick={() => setPage(i)}
-                      aria-label={`Page ${i + 1}`}
-                      className={`rounded-full transition-all ${i === page ? 'w-6 h-2.5 bg-[#7A003C]' : 'w-2.5 h-2.5 bg-[#B76E79]/30 hover:bg-[#B76E79]/60'}`}
-                    />
-                  ))}
-                </div>
-
-                <button type="button" onClick={next} aria-label="Next"
-                  className="w-10 h-10 rounded-full border border-pink-100 bg-white flex items-center justify-center hover:bg-[#7A003C] hover:text-white hover:border-[#7A003C] transition-all text-rose-900/60">
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            {/* Total count */}
-            <p className="text-center text-[10px] text-rose-900/30 font-semibold uppercase tracking-widest mt-6">
-              {reviews.length} verified {reviews.length === 1 ? 'review' : 'reviews'}
-            </p>
-          </>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {visible.map((review) => (
+              <ReviewCard key={review.id} review={review} />
+            ))}
+          </div>
         )}
       </div>
     </section>

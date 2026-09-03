@@ -48,14 +48,16 @@ export default function Home() {
   }, [fetchData]);
 
   return (
-    <div className="overflow-x-hidden bg-luxury-pink">
+    <div className="overflow-x-hidden bg-brand-bg">
       <LuxuryHero />
       <FeatureBar />
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-luxury-burgundy/50 gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-luxury-burgundy" />
-          <p className="text-xs font-medium uppercase tracking-[0.25em]">Loading Collection</p>
+        <div className="flex flex-col items-center justify-center py-24 text-brand-dark gap-3">
+          <Loader2 className="w-6 h-6 animate-spin text-brand-accent" />
+          <p className="text-xs font-mono tracking-[0.25em] uppercase text-brand-muted">
+            Curating Collection...
+          </p>
         </div>
       ) : (
         <>

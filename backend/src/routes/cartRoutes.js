@@ -3,7 +3,8 @@ const {
   getCart,
   addToCart,
   updateCartItem,
-  deleteCartItem
+  deleteCartItem,
+  mergeCart
 } = require('../controllers/cartController');
 const { authenticateUser } = require('../middleware/auth');
 
@@ -14,6 +15,7 @@ router.use(authenticateUser);
 
 router.get('/', getCart);
 router.post('/', addToCart);
+router.post('/merge', mergeCart);
 router.put('/:id', updateCartItem);
 router.delete('/:id', deleteCartItem);
 

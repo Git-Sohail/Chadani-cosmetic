@@ -1,52 +1,54 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import ScrollReveal from './ScrollReveal';
+import Button from '../Button';
 
 const BANNER_IMAGE =
-  'https://images.unsplash.com/photo-1612817288484-6f916006741a?auto=format&fit=crop&q=80&w=1400';
+  'https://images.unsplash.com/photo-1612817288484-6f916006741a?auto=format&fit=crop&q=80&w=1200';
 
 export default function CollectionBanner() {
   return (
-    <section className="section-padding pt-8 sm:pt-10">
-      <div className="max-w-7xl mx-auto">
-        <ScrollReveal>
-          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden h-[200px] sm:h-[220px] lg:h-[260px] xl:h-[280px]">
+    <section className="py-16 sm:py-20 lg:py-24 bg-brand-bg border-b border-brand-border/60">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center bg-brand-surface border border-brand-border p-6 sm:p-10 lg:p-14">
+          {/* Left: Editorial Image */}
+          <div className="lg:col-span-6 relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-[4/3] w-full overflow-hidden bg-brand-bg border border-brand-border">
             <Image
               src={BANNER_IMAGE}
-              alt="Summer beauty collection"
+              alt="Chadani Cosmetic Editorial Feature"
               fill
-              sizes="100vw"
-              className="object-cover object-center"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover object-center transition-transform duration-700 hover:scale-103"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-luxury-burgundy-dark/88 via-luxury-burgundy/55 to-transparent" />
+          </div>
 
-            <div className="relative z-10 h-full flex flex-col justify-center px-6 sm:px-10 lg:px-12 max-w-lg">
-              <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-luxury-rose-gold mb-2">
-                New Season
-              </span>
-              <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-white font-medium leading-tight mb-2">
-                Summer Collection
-              </h2>
-              <p className="text-white/75 text-sm font-light leading-relaxed mb-4 max-w-sm hidden sm:block">
-                Luxury skincare for radiant, sun-kissed skin.
-              </p>
+          {/* Right: Editorial Narrative */}
+          <div className="lg:col-span-6 space-y-5 sm:space-y-6 lg:pl-4">
+            <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-brand-accent block">
+              Editorial Feature
+            </span>
+
+            <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-brand-dark font-normal leading-tight tracking-tight">
+              Mindfully selected for your daily rituals.
+            </h2>
+
+            <p className="text-sm sm:text-base text-brand-muted leading-relaxed font-normal">
+              At Chadani Cosmetic, we believe beauty essentials should feel personal, authentic, and reliable. From gentle skincare formulations and pigmented cosmetics to hand-finished traditional jewelry, our catalog brings together items that celebrate your unique expression.
+            </p>
+
+            <div className="pt-2">
               <Link href="/shop">
-                <motion.span
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-luxury-burgundy text-sm font-medium shadow-md"
-                  whileHover={{ scale: 1.03, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Shop Now
-                  <ArrowRight className="w-4 h-4" />
-                </motion.span>
+                <Button variant="primary" size="md" className="px-7 py-3 text-xs tracking-[0.16em] uppercase">
+                  <span>Explore Catalog</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-2" />
+                </Button>
               </Link>
             </div>
           </div>
-        </ScrollReveal>
+        </div>
       </div>
     </section>
   );

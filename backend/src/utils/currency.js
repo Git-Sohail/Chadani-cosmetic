@@ -17,4 +17,40 @@ function formatNpr(amount) {
   return `${NPR_SYMBOL} ${rounded.toLocaleString('en-NP')}`;
 }
 
-module.exports = { NPR_SYMBOL, formatNpr };
+/**
+ * Returns the effective selling price for a product.
+ * If a valid discountPrice exists (greater than 0 and less than regular price), it takes priority.
+ */
+function getActivePrice(product) {
+  if (!product) return 0;
+  const regularPrice = Number(product.price) || 0;
+  const discountPrice =
+    product.discountPrice !== null && product.discountPrice !== undefined
+      ? Number(product.discountPrice)
+      : null;
+
+  if (
+    discountPrice !== null &&
+    !Number.isNaN(discountPrice) &&
+    discountPrice > 0 &&
+    discountPrice < regularPrice
+  ) {
+    return discountPrice;
+  }
+  return regularPrice;
+}
+
+const DHARAN_DELIVERY_FEE = 100;
+
+function calculateOrderTotal(subtotal) {
+  if (!subtotal || subtotal <= 0) return 0;
+  return subtotal + DHARAN_DELIVERY_FEE;
+}
+
+module.exports = {
+  NPR_SYMBOL,
+  formatNpr,
+  getActivePrice,
+  DHARAN_DELIVERY_FEE,
+  calculateOrderTotal,
+};

@@ -307,6 +307,7 @@ export default function OrderHistoryCard({ order, isExpanded, isHighlighted, onT
               <div className="text-right">
                 <p className="text-[9px] font-black uppercase tracking-widest text-rose-900/40">Grand total</p>
                 <p className="text-lg font-black text-rose-900">{formatPrice(order.totalAmount)}</p>
+                <span className="text-[9px] text-rose-900/50 block">Includes Rs. 100 Dharan Delivery</span>
               </div>
             </div>
           </section>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingBag, Heart, Menu, X, Search, LogOut, MessageCircle } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import { resolveImageUrl } from '../utils/imageUrl';
@@ -16,12 +16,24 @@ import NotificationBell from './NotificationBell';
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const pathname = usePathname();
+  const router = useRouter();
 
   const { user, logout } = useAuth();
   const { cartItems } = useCart();
   const { wishlistItems } = useWishlist();
   const { openChatWidget, unreadCount: chatUnread } = useChat();
+
+  const handleSearchSubmit = (e) => {
+    e?.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) return;
+    setSearchOpen(false);
+    setIsOpen(false);
+    router.push(`/shop?search=${encodeURIComponent(query)}`);
+  };
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const wishlistCount = wishlistItems.length;
@@ -61,225 +73,341 @@ export default function Navbar() {
 
   return (
     <>
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled ? 'glass-nav' : 'bg-transparent border-b border-transparent shadow-none'
-        } h-[var(--nav-height-mobile)] lg:h-[var(--nav-height-desktop)]`}
-      >
-        <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-full gap-3 lg:gap-6">
-            <div className="flex shrink-0 items-center min-w-0">
-              <Logo size="lg" noLink />
-            </div>
+      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+        {/* Subtle Announcement Strip with accurate delivery messaging */}
+        <div className="hidden sm:block bg-brand-surface border-b border-brand-border-subtle py-1.5 text-center text-[10px] sm:text-[11px] font-sans tracking-[0.22em] uppercase text-brand-muted">
+          Dharan Delivery &bull; Flat Rs. 100 &bull; Cash on Delivery Available
+        </div>
 
-            <div className="hidden lg:flex items-center gap-6 xl:gap-10 min-w-0">
-              {navLinks.map((link) => {
-                const isActive = pathname === link.href;
-                return (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    className={`shrink-0 text-[11px] font-medium uppercase tracking-[0.16em] transition-colors duration-300 relative py-2 whitespace-nowrap ${
-                      isActive
-                        ? 'text-luxury-burgundy'
-                        : 'text-luxury-text/55 hover:text-luxury-burgundy'
-                    }`}
-                  >
-                    {link.name}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-luxury-burgundy rounded-full animate-fadeIn" />
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
+        {/* Main Navbar */}
+        <nav
+          className={`transition-all duration-300 ${
+            scrolled
+              ? 'bg-brand-surface/95 backdrop-blur-md border-b border-brand-border/80 shadow-xs'
+              : 'bg-brand-surface/90 backdrop-blur-sm border-b border-brand-border/40'
+          } h-[var(--nav-height-mobile)] lg:h-[var(--nav-height-desktop)]`}
+        >
+          <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-full gap-4 lg:gap-8">
+              {/* Logo */}
+              <div className="flex shrink-0 items-center min-w-0">
+                <Logo size="lg" href="/" />
+              </div>
 
-            <div className="hidden lg:flex items-center gap-3 xl:gap-5 shrink-0">
-              <button
-                type="button"
-                className="text-rose-950/50 hover:text-rose-900 p-2.5 rounded-xl hover:bg-pink-50 transition-all"
-                aria-label="Search"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-
-              {isLoggedIn && userRole !== 'admin' && <NotificationBell />}
-
-              {isLoggedIn && userRole === 'customer' && (
-                <button
-                  type="button"
-                  onClick={openChatWidget}
-                  className="relative text-rose-950/50 hover:text-rose-900 p-2.5 rounded-xl hover:bg-pink-50 transition-all"
-                  aria-label="Open support chat"
-                  title="Support Chat"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  {chatUnread > 0 && (
-                    <span className="absolute top-1 right-1 inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[9px] font-black text-white bg-rose-700 rounded-full ring-2 ring-white">
-                      {chatUnread > 9 ? '9+' : chatUnread}
-                    </span>
-                  )}
-                </button>
-              )}
-
-              <Link
-                href="/wishlist"
-                className="relative text-rose-950/50 hover:text-rose-900 transition-all p-2.5 rounded-xl hover:bg-pink-50"
-              >
-                <Heart className={`w-5 h-5 ${wishlistCount > 0 ? 'fill-rose-600 text-rose-600' : ''}`} />
-                {wishlistCount > 0 && (
-                  <span className="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-black leading-none text-white bg-rose-700 rounded-full ring-2 ring-white">
-                    {wishlistCount}
-                  </span>
-                )}
-              </Link>
-
-              <Link href="/cart" className="relative text-rose-950/50 hover:text-rose-900 transition-all p-2.5 rounded-xl hover:bg-pink-50">
-                <ShoppingBag className="w-5 h-5" />
-                {cartCount > 0 && (
-                  <span className="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-black leading-none text-white bg-rose-700 rounded-full ring-2 ring-white">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
-
-              <div className="pl-3 xl:pl-4 border-l border-pink-100 flex items-center gap-3">
-                {isLoggedIn ? (
-                  <div className="flex items-center gap-2 xl:gap-3">
-                    {userRole !== 'admin' && (
-                      <Link
-                        href="/profile"
-                        className="w-9 h-9 rounded-full overflow-hidden border-2 border-rose-900/20 ring-2 ring-white shadow-md bg-rose-900 text-white flex items-center justify-center text-sm font-black shrink-0"
-                        title="Your profile"
-                      >
-                        {resolveImageUrl(user.profileImage) ? (
-                          <img
-                            src={resolveImageUrl(user.profileImage)}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          user.name?.charAt(0)
-                        )}
-                      </Link>
-                    )}
-                    <div className="hidden xl:flex flex-col items-end">
-                      <span className="text-[10px] font-black text-rose-900 uppercase tracking-widest">
-                        Hi, {user.name.split(' ')[0]}
-                      </span>
-                      {userRole === 'admin' ? (
-                        <Link href="/admin" className="text-[8px] font-black text-rose-600 uppercase tracking-[0.2em] hover:underline mt-0.5">
-                          Dashboard
-                        </Link>
-                      ) : (
-                        <div className="flex gap-2 mt-0.5">
-                          <Link href="/profile" className="text-[8px] font-black text-rose-600 uppercase tracking-[0.2em] hover:underline">
-                            Profile
-                          </Link>
-                          <span className="text-[8px] text-pink-200">|</span>
-                          <Link href="/orders" className="text-[8px] font-black text-rose-600 uppercase tracking-[0.2em] hover:underline">
-                            Orders
-                          </Link>
-                        </div>
+              {/* Desktop Nav Links */}
+              <div className="hidden lg:flex items-center gap-8 xl:gap-10 min-w-0">
+                {navLinks.map((link) => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.name}
+                      href={link.href}
+                      className={`shrink-0 text-[11px] font-medium uppercase tracking-[0.2em] transition-colors duration-200 relative py-1 whitespace-nowrap ${
+                        isActive
+                          ? 'text-brand-dark'
+                          : 'text-brand-muted hover:text-brand-dark'
+                      }`}
+                    >
+                      {link.name}
+                      {isActive && (
+                        <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-accent rounded-full animate-fadeIn" />
                       )}
-                    </div>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Controls */}
+              <div className="hidden lg:flex items-center gap-3.5 xl:gap-4 shrink-0">
+                {/* Search interaction */}
+                {searchOpen ? (
+                  <form
+                    onSubmit={handleSearchSubmit}
+                    className="flex items-center gap-2 bg-brand-bg border border-brand-border rounded px-3 py-1.5 shadow-2xs animate-fadeIn"
+                  >
+                    <Search className="w-3.5 h-3.5 text-brand-muted shrink-0" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setSearchOpen(false);
+                      }}
+                      placeholder="Search cosmetics..."
+                      className="w-40 xl:w-56 text-xs text-brand-text placeholder:text-brand-muted/50 bg-transparent focus:outline-none"
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      className="text-[10px] font-medium text-brand-dark hover:text-brand-accent uppercase tracking-wider px-1 cursor-pointer"
+                    >
+                      Go
+                    </button>
                     <button
                       type="button"
-                      onClick={logout}
-                      className="text-rose-950/50 hover:text-red-600 p-2.5 rounded-xl hover:bg-red-50 transition-all cursor-pointer"
-                      title="Sign Out"
+                      onClick={() => setSearchOpen(false)}
+                      className="text-brand-muted hover:text-brand-dark p-0.5 transition-colors cursor-pointer"
+                      aria-label="Close search"
                     >
-                      <LogOut className="w-5 h-5" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
-                  </div>
+                  </form>
                 ) : (
-                  <Link href="/login">
-                    <Button variant="primary" size="sm" className="px-5 xl:px-6 py-2.5 rounded-xl shadow-lg shadow-rose-900/10 whitespace-nowrap">
-                      Sign In
-                    </Button>
-                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setSearchOpen(true)}
+                    className="text-brand-text/75 hover:text-brand-dark p-2 rounded transition-colors cursor-pointer"
+                    aria-label="Search collection"
+                    title="Search"
+                  >
+                    <Search className="w-4 h-4" />
+                  </button>
                 )}
-              </div>
-            </div>
 
-            <div className="flex items-center lg:hidden gap-1 shrink-0">
-              <Link href="/cart" className="relative text-rose-950/70 p-2.5">
-                <ShoppingBag className="h-6 w-6" />
-                {cartCount > 0 && (
-                  <span className="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-black leading-none text-white bg-rose-700 rounded-full ring-2 ring-white">
-                    {cartCount}
-                  </span>
+                {/* Notification Bell */}
+                {isLoggedIn && userRole !== 'admin' && <NotificationBell />}
+
+                {/* Customer Chat */}
+                {isLoggedIn && userRole === 'customer' && (
+                  <button
+                    type="button"
+                    onClick={openChatWidget}
+                    className="relative text-brand-text/75 hover:text-brand-dark p-2 rounded transition-colors cursor-pointer"
+                    aria-label="Open support chat"
+                    title="Support Chat"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    {chatUnread > 0 && (
+                      <span className="absolute top-1 right-1 inline-flex items-center justify-center min-w-[15px] h-3.5 px-0.5 text-[8px] font-semibold text-white bg-brand-dark rounded-full">
+                        {chatUnread > 9 ? '9+' : chatUnread}
+                      </span>
+                    )}
+                  </button>
                 )}
-              </Link>
-              <button
-                type="button"
-                onClick={() => setIsOpen(!isOpen)}
-                className="p-2.5 rounded-xl text-rose-950 hover:bg-pink-50 transition-colors"
-                aria-label={isOpen ? 'Close menu' : 'Open menu'}
-                aria-expanded={isOpen}
-              >
-                {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
+
+                {/* Wishlist */}
+                <Link
+                  href="/wishlist"
+                  className="relative text-brand-text/75 hover:text-brand-dark p-2 rounded transition-colors"
+                  aria-label="Wishlist"
+                  title="Wishlist"
+                >
+                  <Heart className={`w-4 h-4 ${wishlistCount > 0 ? 'fill-brand-accent text-brand-accent' : ''}`} />
+                  {wishlistCount > 0 && (
+                    <span className="absolute top-1 right-1 inline-flex items-center justify-center min-w-[15px] h-3.5 px-0.5 text-[8px] font-semibold text-white bg-brand-dark rounded-full">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Cart */}
+                <Link
+                  href="/cart"
+                  className="relative text-brand-text/75 hover:text-brand-dark p-2 rounded transition-colors"
+                  aria-label="Shopping Cart"
+                  title="Cart"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  {cartCount > 0 && (
+                    <span className="absolute top-1 right-1 inline-flex items-center justify-center min-w-[15px] h-3.5 px-0.5 text-[8px] font-semibold text-white bg-brand-dark rounded-full">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+
+                {/* User Session / Sign In */}
+                <div className="pl-3 border-l border-brand-border flex items-center gap-3">
+                  {isLoggedIn ? (
+                    <div className="flex items-center gap-3">
+                      {userRole !== 'admin' && (
+                        <Link
+                          href="/profile"
+                          className="w-8 h-8 rounded-full overflow-hidden border border-brand-border bg-brand-surface text-brand-dark flex items-center justify-center text-xs font-medium shrink-0 hover:border-brand-accent transition-colors"
+                          title="Your profile"
+                        >
+                          {resolveImageUrl(user.profileImage) ? (
+                            <img
+                              src={resolveImageUrl(user.profileImage)}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            user.name?.charAt(0)
+                          )}
+                        </Link>
+                      )}
+                      <div className="hidden xl:flex flex-col items-end leading-tight">
+                        <span className="text-[10px] font-semibold tracking-wider text-brand-dark uppercase">
+                          {user.name.split(' ')[0]}
+                        </span>
+                        {userRole === 'admin' ? (
+                          <Link href="/admin" className="text-[9px] font-medium text-brand-accent tracking-wider uppercase hover:underline">
+                            Dashboard &rarr;
+                          </Link>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-[9px] text-brand-muted tracking-wider uppercase">
+                            <Link href="/profile" className="hover:text-brand-dark">Profile</Link>
+                            <span>&bull;</span>
+                            <Link href="/orders" className="hover:text-brand-dark">Orders</Link>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={logout}
+                        className="text-brand-muted hover:text-brand-dark p-1.5 transition-colors cursor-pointer"
+                        title="Sign Out"
+                        aria-label="Sign Out"
+                      >
+                        <LogOut className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <Link href="/login">
+                      <Button variant="primary" size="sm" className="px-4 py-1.5 text-[11px] tracking-[0.16em] uppercase">
+                        Sign In
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+              {/* Mobile Right Controls */}
+              <div className="flex items-center lg:hidden gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(true)}
+                  className="p-2 text-brand-text hover:text-brand-accent transition-colors cursor-pointer"
+                  aria-label="Search collection"
+                >
+                  <Search className="h-4.5 w-4.5" />
+                </button>
+                <Link href="/cart" className="relative p-2 text-brand-text hover:text-brand-accent transition-colors" aria-label="Shopping Cart">
+                  <ShoppingBag className="h-4.5 w-4.5" />
+                  {cartCount > 0 && (
+                    <span className="absolute top-1 right-1 inline-flex items-center justify-center min-w-[15px] h-3.5 px-0.5 text-[8px] font-semibold text-white bg-brand-dark rounded-full">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(!isOpen)}
+                  className="p-2 text-brand-text hover:text-brand-accent transition-colors cursor-pointer"
+                  aria-label={isOpen ? 'Close menu' : 'Open menu'}
+                  aria-expanded={isOpen}
+                >
+                  {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
+      {/* Mobile Menu Drawer */}
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-2xl border-t border-pink-50 animate-fadeIn overflow-y-auto"
+          className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-brand-surface/98 backdrop-blur-xl border-t border-brand-border animate-fadeIn overflow-y-auto"
           style={{ top: 'var(--nav-height-mobile)' }}
         >
-          <div className="px-6 pt-8 pb-12 space-y-8">
-            <div className="space-y-4">
-              <p className="text-[10px] font-black text-rose-950/30 uppercase tracking-[0.3em]">Menu</p>
-              {navLinks.map((link) => {
-                const isActive = pathname === link.href;
-                return (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    onClick={() => setIsOpen(false)}
-                    className={`block py-3 text-2xl font-serif font-black transition-colors ${
-                      isActive ? 'text-rose-600' : 'text-rose-950'
-                    }`}
-                  >
-                    {link.name}
-                  </Link>
-                );
-              })}
+          <div className="px-6 pt-6 pb-12 space-y-7 max-w-lg mx-auto">
+            {/* Mobile Search Bar */}
+            <form onSubmit={handleSearchSubmit} className="relative">
+              <Search className="w-4 h-4 text-brand-muted absolute left-3.5 top-3.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search cosmetics, skincare..."
+                className="w-full pl-10 pr-14 py-2.5 bg-brand-bg border border-brand-border rounded text-xs text-brand-text placeholder:text-brand-muted/60 focus:outline-none focus:border-brand-accent"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-2 px-2.5 py-1 bg-brand-dark text-brand-surface text-[10px] font-medium rounded uppercase tracking-wider cursor-pointer"
+              >
+                Go
+              </button>
+            </form>
+
+            {/* Navigation Links */}
+            <div className="space-y-3 pt-2">
+              <p className="text-[10px] font-semibold text-brand-muted tracking-[0.25em] uppercase">Navigation</p>
+              <div className="space-y-2">
+                {navLinks.map((link) => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.name}
+                      href={link.href}
+                      onClick={() => setIsOpen(false)}
+                      className={`block py-1.5 font-serif text-2xl transition-colors ${
+                        isActive ? 'text-brand-accent' : 'text-brand-dark hover:text-brand-accent'
+                      }`}
+                    >
+                      {link.name}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="pt-8 border-t border-pink-50 space-y-6">
-              <p className="text-[10px] font-black text-rose-950/30 uppercase tracking-[0.3em]">Account</p>
-              <div className="grid grid-cols-2 gap-4">
-                <Link href="/wishlist" onClick={() => setIsOpen(false)} className="flex items-center gap-3 p-4 bg-pink-50 rounded-2xl text-rose-950 font-bold">
-                  <Heart className="w-5 h-5" />
-                  <span>Wishlist</span>
+            {/* Quick Access Badges */}
+            <div className="pt-4 border-t border-brand-border space-y-4">
+              <p className="text-[10px] font-semibold text-brand-muted tracking-[0.25em] uppercase">Quick Access</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Link
+                  href="/wishlist"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 p-3 bg-brand-bg border border-brand-border/60 rounded text-xs text-brand-text hover:border-brand-accent transition-colors"
+                >
+                  <Heart className="w-4 h-4 text-brand-accent" />
+                  <span>Wishlist ({wishlistCount})</span>
                 </Link>
-                <Link href="/cart" onClick={() => setIsOpen(false)} className="flex items-center gap-3 p-4 bg-pink-50 rounded-2xl text-rose-950 font-bold">
-                  <ShoppingBag className="w-5 h-5" />
-                  <span>Cart</span>
+                <Link
+                  href="/cart"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 p-3 bg-brand-bg border border-brand-border/60 rounded text-xs text-brand-text hover:border-brand-accent transition-colors"
+                >
+                  <ShoppingBag className="w-4 h-4 text-brand-accent" />
+                  <span>Cart ({cartCount})</span>
                 </Link>
               </div>
 
+              {/* User Account / Sign In */}
               {isLoggedIn ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border border-pink-100 rounded-2xl">
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-black text-rose-950 uppercase truncate">{user.name}</span>
-                      <span className="text-[10px] font-bold text-rose-900/50 truncate">{user.email}</span>
+                <div className="space-y-3 pt-2">
+                  <div className="p-3.5 bg-brand-bg border border-brand-border rounded space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-brand-dark uppercase tracking-wider truncate">{user.name}</p>
+                        <p className="text-[11px] text-brand-muted truncate">{user.email}</p>
+                      </div>
+                      {userRole === 'admin' ? (
+                        <Link
+                          href="/admin"
+                          onClick={() => setIsOpen(false)}
+                          className="px-2.5 py-1 bg-brand-dark text-brand-surface text-[10px] font-medium rounded uppercase tracking-wider"
+                        >
+                          Admin
+                        </Link>
+                      ) : null}
                     </div>
-                    {userRole === 'admin' ? (
-                      <Link href="/admin" onClick={() => setIsOpen(false)} className="px-3 py-1 bg-rose-900 text-white text-[8px] font-black uppercase rounded-lg shrink-0">
-                        Admin
-                      </Link>
-                    ) : (
-                      <div className="flex flex-wrap gap-2 shrink-0">
-                        <Link href="/profile" onClick={() => setIsOpen(false)} className="px-2.5 py-1 bg-rose-50 border border-pink-100 text-rose-900 text-[8px] font-black uppercase rounded-lg">
+
+                    {userRole !== 'admin' && (
+                      <div className="flex flex-wrap gap-2 pt-1 border-t border-brand-border/50 text-xs">
+                        <Link
+                          href="/profile"
+                          onClick={() => setIsOpen(false)}
+                          className="px-2.5 py-1 bg-brand-surface border border-brand-border rounded text-[10px] uppercase tracking-wider text-brand-text hover:border-brand-accent"
+                        >
                           Profile
                         </Link>
-                        <Link href="/orders" onClick={() => setIsOpen(false)} className="px-2.5 py-1 bg-rose-50 border border-pink-100 text-rose-900 text-[8px] font-black uppercase rounded-lg">
+                        <Link
+                          href="/orders"
+                          onClick={() => setIsOpen(false)}
+                          className="px-2.5 py-1 bg-brand-surface border border-brand-border rounded text-[10px] uppercase tracking-wider text-brand-text hover:border-brand-accent"
+                        >
                           Orders
                         </Link>
                         <button
@@ -288,31 +416,34 @@ export default function Navbar() {
                             setIsOpen(false);
                             openChatWidget();
                           }}
-                          className="px-2.5 py-1 bg-rose-900 text-white text-[8px] font-black uppercase rounded-lg"
+                          className="px-2.5 py-1 bg-brand-dark text-brand-surface rounded text-[10px] uppercase tracking-wider cursor-pointer"
                         >
-                          Chat
+                          Support Chat
                         </button>
                       </div>
                     )}
                   </div>
+
                   <button
                     type="button"
                     onClick={() => {
                       setIsOpen(false);
                       logout();
                     }}
-                    className="w-full flex items-center justify-center gap-3 py-4 text-red-600 font-black uppercase tracking-widest text-xs border-2 border-red-50 rounded-2xl"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-brand-muted hover:text-brand-dark text-xs uppercase tracking-wider border border-brand-border rounded cursor-pointer transition-colors"
                   >
-                    <LogOut className="w-5 h-5" />
-                    Sign Out
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
                   </button>
                 </div>
               ) : (
-                <Link href="/login" onClick={() => setIsOpen(false)}>
-                  <Button variant="primary" fullWidth size="lg" className="rounded-2xl py-4 shadow-xl shadow-rose-900/10">
-                    Sign In to Store
-                  </Button>
-                </Link>
+                <div className="pt-2">
+                  <Link href="/login" onClick={() => setIsOpen(false)}>
+                    <Button variant="primary" fullWidth size="md" className="py-3 text-xs tracking-[0.18em] uppercase">
+                      Sign In to Account
+                    </Button>
+                  </Link>
+                </div>
               )}
             </div>
           </div>

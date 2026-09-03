@@ -33,6 +33,23 @@ export function ChatProvider({ children }) {
     [token]
   );
 
+  const fetchConversations = useCallback(async () => {
+    if (!token || !isAdmin) return;
+    try {
+      const res = await axios.get(`${API_URL}/chat/conversations`, authHeaders());
+      setConversations(res.data.conversations || []);
+      setUnreadCount(res.data.totalUnread ?? 0);
+    } catch (err) {
+      logApiIssue('chat conversations', err);
+    }
+  }, [API_URL, token, isAdmin, authHeaders]);
+
+  // Stable ref accessible inside socket event handlers
+  const fetchConversationsRef = useRef(fetchConversations);
+  useEffect(() => {
+    fetchConversationsRef.current = fetchConversations;
+  }, [fetchConversations]);
+
   // Keep ref in sync
   useEffect(() => {
     activeConvRef.current = activeConversation;
@@ -179,23 +196,6 @@ export function ChatProvider({ children }) {
     }
   }, [API_URL, token, isCustomer, authHeaders]);
 
-  const fetchConversations = useCallback(async () => {
-    if (!token || !isAdmin) return;
-    try {
-      const res = await axios.get(`${API_URL}/chat/conversations`, authHeaders());
-      setConversations(res.data.conversations || []);
-      setUnreadCount(res.data.totalUnread ?? 0);
-    } catch (err) {
-      logApiIssue('chat conversations', err);
-    }
-  }, [API_URL, token, isAdmin, authHeaders]);
-
-  // Keep a stable ref so the socket handler can call it without stale closure
-  const fetchConversationsRef = useRef(fetchConversations);
-  useEffect(() => {
-    fetchConversationsRef.current = fetchConversations;
-  }, [fetchConversations]);
-
   const openConversation = useCallback(
     async (conversationId) => {
       if (!token || !conversationId) return;
@@ -289,9 +289,10 @@ export function ChatProvider({ children }) {
       }
       return;
     }
-    if (activeConversation?.id) {
+    const activeId = activeConversation?.id;
+    if (activeId) {
       const res = await axios.get(
-        `${API_URL}/chat/conversations/${activeConversation.id}`,
+        `${API_URL}/chat/conversations/${activeId}`,
         authHeaders()
       );
       setMessages(res.data.messages || []);
