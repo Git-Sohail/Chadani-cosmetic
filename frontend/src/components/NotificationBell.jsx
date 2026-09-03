@@ -6,6 +6,22 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Bell, Package, CheckCheck, Loader2 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 
+function formatNotificationTime(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return 'Yesterday';
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 export default function NotificationBell() {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead, fetchNotifications } =
     useNotifications();
@@ -40,9 +56,23 @@ export default function NotificationBell() {
         setOpen(false);
       }
     };
-    if (open) document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+
+    if (open) {
+      document.addEventListener('mousedown', onClickOutside);
+      document.addEventListener('keydown', onKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside);
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [open]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   return (
     <div className="relative" ref={panelRef}>
@@ -53,43 +83,55 @@ export default function NotificationBell() {
           setOpen(willOpen);
           if (willOpen) fetchNotifications();
         }}
-        className="relative text-rose-950/50 hover:text-rose-900 p-2.5 rounded-xl hover:bg-pink-50 transition-all"
+        className={`relative p-2 rounded transition-colors cursor-pointer ${
+          open
+            ? 'text-brand-dark bg-brand-bg'
+            : 'text-brand-text/75 hover:text-brand-dark hover:bg-brand-bg/50'
+        }`}
         aria-label="Notifications"
+        aria-expanded={open}
+        title="Notifications"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[9px] font-black text-white bg-rose-700 rounded-full ring-2 ring-white">
+          <span className="absolute top-1 right-1 inline-flex items-center justify-center min-w-[15px] h-3.5 px-0.5 text-[8px] font-semibold text-white bg-brand-dark rounded-full">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-[min(100vw-2rem,22rem)] bg-white border border-pink-100 rounded-2xl shadow-2xl z-[100] overflow-hidden animate-fadeIn">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-pink-50 bg-pink-50/40">
-            <span className="text-[10px] font-black uppercase tracking-widest text-rose-950">
+        <div
+          role="region"
+          aria-label="Notifications menu"
+          className="absolute right-0 mt-2 w-[min(100vw-2rem,22rem)] bg-brand-surface border border-brand-border shadow-xl z-[100] overflow-hidden animate-fadeIn"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border/60 bg-brand-bg/40">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-brand-dark">
               Notifications
             </span>
             {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={markAllAsRead}
-                className="text-[9px] font-bold text-rose-700 uppercase tracking-wider flex items-center gap-1 hover:underline"
+                className="text-[9px] font-medium text-brand-accent hover:text-brand-dark uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
-                Mark all read
+                <span>Mark all read</span>
               </button>
             )}
           </div>
 
-          <div className="max-h-80 overflow-y-auto">
+          {/* List */}
+          <div className="max-h-80 overflow-y-auto divide-y divide-brand-border/40">
             {loading && notifications.length === 0 ? (
-              <div className="py-10 flex justify-center text-rose-400">
-                <Loader2 className="w-6 h-6 animate-spin" />
+              <div className="py-10 flex justify-center text-brand-muted">
+                <Loader2 className="w-5 h-5 animate-spin text-brand-accent" />
               </div>
             ) : notifications.length === 0 ? (
-              <p className="py-10 text-center text-xs font-semibold text-rose-900/40 px-4">
-                No notifications yet. Order updates will appear here.
+              <p className="py-10 text-center text-xs text-brand-muted px-4 leading-relaxed">
+                No notifications yet. Order status updates will appear here.
               </p>
             ) : (
               notifications.map((n) => (
@@ -97,25 +139,27 @@ export default function NotificationBell() {
                   key={n.id}
                   type="button"
                   onClick={() => handleNotificationClick(n)}
-                  className={`w-full text-left px-4 py-3 border-b border-pink-50/80 hover:bg-pink-50/50 transition-colors ${
-                    !n.read ? 'bg-rose-50/30' : ''
+                  className={`w-full text-left px-4 py-3 hover:bg-brand-bg/60 transition-colors cursor-pointer ${
+                    !n.read ? 'bg-brand-bg/30' : ''
                   }`}
                 >
-                  <div className="flex gap-3">
-                    <div className="p-2 rounded-xl bg-pink-100 text-rose-800 shrink-0">
-                      <Package className="w-4 h-4" />
+                  <div className="flex gap-3 items-start">
+                    <div className="p-2 rounded bg-brand-bg border border-brand-border text-brand-accent shrink-0 mt-0.5">
+                      <Package className="w-3.5 h-3.5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-black text-rose-950">{n.title}</p>
-                      <p className="text-[11px] text-rose-900/70 font-medium mt-0.5 leading-snug">
+                      <p className="text-xs font-serif font-medium text-brand-dark leading-snug">
+                        {n.title}
+                      </p>
+                      <p className="text-[11px] text-brand-muted font-normal mt-0.5 leading-relaxed">
                         {n.message}
                       </p>
-                      <p className="text-[9px] text-rose-900/40 mt-1">
-                        {new Date(n.createdAt).toLocaleString()}
+                      <p className="text-[9px] text-brand-muted font-mono mt-1">
+                        {formatNotificationTime(n.createdAt)}
                       </p>
                     </div>
                     {!n.read && (
-                      <span className="w-2 h-2 rounded-full bg-rose-600 shrink-0 mt-1" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0 mt-1.5" />
                     )}
                   </div>
                 </button>
@@ -123,13 +167,14 @@ export default function NotificationBell() {
             )}
           </div>
 
-          <div className="p-3 border-t border-brand-border bg-brand-bg/50">
+          {/* Footer */}
+          <div className="p-3 border-t border-brand-border/60 bg-brand-bg/40">
             <Link
               href="/account/orders"
               onClick={() => setOpen(false)}
               className="block text-center text-[10px] font-medium uppercase tracking-widest text-brand-dark hover:text-brand-accent transition-colors"
             >
-              View all orders
+              View all orders &rarr;
             </Link>
           </div>
         </div>
