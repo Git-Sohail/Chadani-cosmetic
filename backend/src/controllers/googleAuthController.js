@@ -5,8 +5,16 @@ const { OAuth2Client } = require('google-auth-library');
 const prisma = require('../db');
 const { formatUserForClient } = require('../utils/authPayload');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'chadani_cosmetic_jwt_secret_key_2026_dev';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('[googleAuthController] JWT_SECRET environment variable is required');
+}
 const ADMIN_EMAIL = 'admin@chadanicosmetic.com';
+
+function isSafeRedirect(url) {
+  if (!url || typeof url !== 'string') return false;
+  return url.startsWith('/') && !url.startsWith('//') && !url.includes('\\');
+}
 
 function getGoogleConfig() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -44,10 +52,7 @@ const startGoogleAuth = (req, res) => {
     return res.status(503).json({ error: 'Google sign-in is not configured on the server.' });
   }
 
-  const redirectAfter =
-    typeof req.query.redirect === 'string' && req.query.redirect.startsWith('/')
-      ? req.query.redirect
-      : '/';
+  const redirectAfter = isSafeRedirect(req.query.redirect) ? req.query.redirect : '/account';
 
   const state = jwt.sign(
     { redirect: redirectAfter, nonce: crypto.randomBytes(16).toString('hex') },

@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { getSafeRedirect } from '@/utils/redirects';
 
 function decodeBase64Url(str) {
   const padded = str.replace(/-/g, '+').replace(/_/g, '/');
@@ -44,7 +46,8 @@ function GoogleCallbackContent() {
 
     const token = searchParams.get('token');
     const userEncoded = searchParams.get('user');
-    const redirect = searchParams.get('redirect') || '/';
+    const rawRedirect = searchParams.get('redirect');
+    const safeDestination = getSafeRedirect(rawRedirect, '/account');
 
     if (!token || !userEncoded) {
       setError('Invalid sign-in response. Please try again.');
@@ -52,53 +55,62 @@ function GoogleCallbackContent() {
     }
 
     const user = decodeUserPayload(userEncoded);
-
     if (!user) {
-      setError('Could not read your account details. Please try again.');
+      setError('Could not process your account details. Please try signing in again.');
       return;
     }
 
     completeGoogleAuth(token, user);
 
-    const destination =
-      user.role === 'admin' ? '/admin' : redirect.startsWith('/') ? redirect : '/';
-
+    const destination = user.role === 'admin' ? '/admin' : safeDestination;
     router.replace(destination);
   }, [searchParams, completeGoogleAuth, router]);
 
   if (error) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="text-rose-800 font-semibold">{error}</p>
-        <button
-          type="button"
-          onClick={() => router.push('/login')}
-          className="text-sm text-rose-600 underline font-bold"
-        >
-          Back to sign in
-        </button>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4 text-center max-w-sm mx-auto">
+        <div className="w-12 h-12 bg-red-50 border border-red-200 text-red-700 flex items-center justify-center rounded-full">
+          <AlertCircle className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="font-serif text-lg text-brand-dark font-medium">Authentication Failed</h2>
+          <p className="text-xs text-brand-muted leading-relaxed">{error}</p>
+        </div>
+        <div className="pt-2">
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center px-5 py-2.5 bg-brand-dark text-brand-surface text-xs font-medium uppercase tracking-wider hover:bg-brand-accent transition-colors min-h-[44px]"
+          >
+            Return to Sign In
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-rose-950/50">
-      <Loader2 className="w-10 h-10 animate-spin text-rose-800" />
-      <span className="text-xs font-black uppercase tracking-[0.25em]">Completing Google sign-in...</span>
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-brand-muted">
+      <Loader2 className="w-8 h-8 animate-spin text-brand-accent" />
+      <span className="text-xs font-mono uppercase tracking-widest">
+        Finalizing Google sign-in...
+      </span>
     </div>
   );
 }
 
 export default function GoogleCallbackPage() {
   return (
-    <React.Suspense
+    <Suspense
       fallback={
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <Loader2 className="w-10 h-10 animate-spin text-rose-800" />
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-brand-muted">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-accent" />
+          <span className="text-xs font-mono uppercase tracking-widest">
+            Loading portal...
+          </span>
         </div>
       }
     >
       <GoogleCallbackContent />
-    </React.Suspense>
+    </Suspense>
   );
 }

@@ -1,13 +1,15 @@
 'use client';
 
 import React from 'react';
+import { getSafeRedirect } from '../utils/redirects';
 
 function buildGoogleAuthUrl(redirectPath) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
   const backendOrigin = apiUrl.replace(/\/api\/?$/, '');
   const params = new URLSearchParams();
-  if (redirectPath && redirectPath.startsWith('/')) {
-    params.set('redirect', redirectPath);
+  const safePath = getSafeRedirect(redirectPath, '');
+  if (safePath) {
+    params.set('redirect', safePath);
   }
   const query = params.toString();
   return `${backendOrigin}/api/auth/google${query ? `?${query}` : ''}`;
@@ -22,9 +24,9 @@ export default function GoogleSignInButton({ redirectTo = '', className = '' }) 
     <button
       type="button"
       onClick={handleGoogleSignIn}
-      className={`w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-pink-200 rounded-xl text-sm font-semibold text-rose-950 bg-white hover:bg-pink-50/80 transition-colors shadow-sm ${className}`}
+      className={`w-full flex items-center justify-center gap-3 px-4 py-3 border border-brand-border bg-brand-surface hover:border-brand-accent text-xs font-medium uppercase tracking-wider text-brand-dark transition-colors min-h-[44px] cursor-pointer ${className}`}
     >
-      <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
         <path
           fill="#4285F4"
           d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -42,7 +44,7 @@ export default function GoogleSignInButton({ redirectTo = '', className = '' }) 
           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
         />
       </svg>
-      Continue with Google
+      <span>Continue with Google</span>
     </button>
   );
 }

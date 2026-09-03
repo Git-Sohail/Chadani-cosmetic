@@ -1,283 +1,271 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Button from '../../../components/Button';
 import GoogleSignInButton from '../../../components/GoogleSignInButton';
 import { useAuth } from '../../../context/AuthContext';
-import { Mail, Lock, User, Phone, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
 import Logo from '../../../components/Logo';
+import { getSafeRedirect } from '../../../utils/redirects';
 
 function LoginContent() {
-  const { login, register, user } = useAuth();
+  const { login, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '';
 
-  const [mode, setMode] = useState('login');
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    phone: '',
-  });
+  const rawRedirect = searchParams.get('redirect');
+  const safeRedirect = getSafeRedirect(rawRedirect, '/account');
+  const verifiedSuccess = searchParams.get('verified') === 'success';
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
 
-  const verifiedSuccess = searchParams.get('verified') === 'success';
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       if (user.role === 'admin') {
-        router.push('/admin');
+        router.replace('/admin');
       } else {
-        router.push(redirectTo || '/');
+        router.replace(safeRedirect);
       }
     }
-  }, [user, redirectTo, router]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  }, [user, safeRedirect, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setInfoMessage('');
+    setUnverifiedEmail('');
 
-    if (!formData.email.trim()) return setError('Email address is required.');
-    if (!formData.password) return setError('Password is required.');
-    if (mode === 'signup' && !formData.name.trim()) return setError('Name is required.');
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      return setError('Please enter your email address.');
+    }
+    if (!password) {
+      return setError('Please enter your password.');
+    }
 
     setLoading(true);
 
     try {
-      if (mode === 'login') {
-        const res = await login(formData.email, formData.password);
-        if (res.success) {
-          const storedUser = JSON.parse(localStorage.getItem('bb_user') || '{}');
-          if (storedUser.role === 'admin') {
-            router.push('/admin');
-          } else {
-            router.push(redirectTo || '/');
-          }
+      const res = await login(cleanEmail, password);
+      if (res.success) {
+        // Router navigation will be triggered by the user effect or directly:
+        const storedUser = JSON.parse(localStorage.getItem('bb_user') || '{}');
+        if (storedUser.role === 'admin') {
+          router.push('/admin');
         } else {
-          setError(res.error || 'Invalid credentials.');
-          if (res.requiresVerification && res.email) {
-            setInfoMessage('Redirecting to email verification...');
-            setTimeout(() => {
-              router.push(`/verify-otp?email=${encodeURIComponent(res.email)}`);
-            }, 1500);
-          }
+          router.push(safeRedirect);
         }
       } else {
-        const res = await register(
-          formData.name,
-          formData.email,
-          formData.password,
-          formData.phone
-        );
-        if (res.success) {
-          router.push(`/verify-otp?email=${encodeURIComponent(res.email)}`);
-        } else {
-          setError(res.error || 'Failed to register.');
+        setError(res.error || 'Invalid credentials.');
+        if (res.requiresVerification && res.email) {
+          setUnverifiedEmail(res.email);
+          setInfoMessage('Your email has not been verified yet.');
         }
       }
-    } catch (err) {
-      console.error(err);
-      setError('An unexpected error occurred. Please try again.');
+    } catch {
+      setError('A connection error occurred. Please try again or contact support.');
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleMode = () => {
-    setError('');
-    setInfoMessage('');
-    setMode(mode === 'login' ? 'signup' : 'login');
-  };
-
   return (
-    <>
-      <div className="max-w-md mx-auto px-4 py-12">
-        <div className="bg-white border border-pink-100 rounded-[2.5rem] shadow-xl p-8 sm:p-10 relative overflow-hidden">
-          <div className="text-center space-y-2 mb-8">
-            <div className="flex justify-center mb-3">
-              <Logo size="md" noLink />
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-serif font-black text-rose-950">
-              {mode === 'login' ? 'Welcome Back' : 'Create Account'}
-            </h2>
-            <p className="text-xs text-rose-900/60 font-semibold">
-              {mode === 'login'
-                ? 'Sign in to access your orders, cart, and wishlist'
-                : 'Register with your email — we will send a verification code'}
-            </p>
+    <div className="min-h-[80vh] flex flex-col justify-center py-10 sm:py-16 px-4 sm:px-6">
+      <div className="max-w-md w-full mx-auto space-y-6">
+        {/* Editorial Brand Header */}
+        <div className="text-center space-y-2">
+          <div className="flex justify-center mb-3">
+            <Logo size="md" />
           </div>
+          <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-brand-accent block">
+            Client Portal
+          </span>
+          <h1 className="font-serif text-2xl sm:text-3xl text-brand-dark font-normal">
+            Welcome Back
+          </h1>
+          <p className="text-xs text-brand-muted max-w-xs mx-auto leading-relaxed">
+            Sign in to manage your orders across Dharan and view your curated collection.
+          </p>
+        </div>
 
+        {/* Main Authentication Card */}
+        <div className="bg-brand-surface border border-brand-border p-6 sm:p-8 space-y-6">
           {verifiedSuccess && (
-            <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-semibold px-4.5 py-3.5 rounded-2xl mb-6 flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
-              <span>Email verified successfully. Please sign in.</span>
-            </div>
-          )}
-
-          {infoMessage && (
-            <div className="bg-amber-50 border border-amber-100 text-amber-800 text-xs font-semibold px-4.5 py-3.5 rounded-2xl mb-6">
-              {infoMessage}
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Email verified successfully. Please sign in below.</span>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-100 text-red-700 text-xs font-semibold px-4.5 py-3.5 rounded-2xl mb-6 space-y-2">
-              <div className="flex items-start gap-2">
-                <span>⚠️ {error}</span>
-              </div>
-              {error.toLowerCase().includes('not verified') && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}`)
-                  }
-                  className="text-rose-900 hover:text-rose-950 underline font-black uppercase text-[10px] tracking-widest block pt-1 cursor-pointer text-left"
+            <div className="p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs space-y-2">
+              <p>{error}</p>
+              {unverifiedEmail && (
+                <Link
+                  href={`/verify-otp?email=${encodeURIComponent(unverifiedEmail)}`}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-brand-dark underline hover:text-brand-accent"
                 >
-                  Verify Email Now
-                </button>
+                  <span>Verify Email Now</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
               )}
             </div>
           )}
 
-          <GoogleSignInButton redirectTo={redirectTo} className="mb-6" />
+          {infoMessage && !error && (
+            <div className="p-3.5 bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+              {infoMessage}
+            </div>
+          )}
 
-          <div className="relative flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-pink-100" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-rose-900/40">
-              or continue with email
-            </span>
-            <div className="flex-1 h-px bg-pink-100" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4.5">
-            {mode === 'signup' && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-rose-950/60 uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-rose-600" />
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Jane Doe"
-                  className="w-full px-4 py-2.5 border border-pink-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300"
-                  required
-                />
-              </div>
-            )}
-
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email Field */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-rose-950/60 uppercase tracking-wider flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-rose-600" />
-                Email Address
+              <label
+                htmlFor="loginEmail"
+                className="text-[11px] font-medium uppercase tracking-wider text-brand-muted flex items-center gap-1.5"
+              >
+                <Mail className="w-3.5 h-3.5 text-brand-accent" />
+                <span>Email Address</span>
               </label>
               <input
+                id="loginEmail"
                 type="email"
                 name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="jane@example.com"
-                className="w-full px-4 py-2.5 border border-pink-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
                 required
+                disabled={loading}
+                className="w-full px-3.5 py-2.5 bg-brand-surface border border-brand-border rounded text-xs text-brand-text placeholder:text-brand-muted/40 focus:outline-none focus:border-brand-accent transition-colors"
               />
             </div>
 
-            {mode === 'signup' && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-rose-950/60 uppercase tracking-wider flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-rose-600" />
-                  Phone Number (Optional)
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="555-123-4567"
-                  className="w-full px-4 py-2.5 border border-pink-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300"
-                />
-              </div>
-            )}
-
+            {/* Password Field */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-rose-950/60 uppercase tracking-wider flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-rose-600" />
-                Password
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="••••••••"
-                className="w-full px-4 py-2.5 border border-pink-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300"
-                required
-              />
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="loginPassword"
+                  className="text-[11px] font-medium uppercase tracking-wider text-brand-muted flex items-center gap-1.5"
+                >
+                  <Lock className="w-3.5 h-3.5 text-brand-accent" />
+                  <span>Password</span>
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-[11px] text-brand-accent hover:underline transition-colors"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
+
+              <div className="relative">
+                <input
+                  id="loginPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  disabled={loading}
+                  className="w-full px-3.5 py-2.5 pr-10 bg-brand-surface border border-brand-border rounded text-xs text-brand-text placeholder:text-brand-muted/40 focus:outline-none focus:border-brand-accent transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-brand-muted hover:text-brand-dark transition-colors cursor-pointer"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-3.5 h-3.5" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </div>
             </div>
 
-            {mode === 'login' && (
-              <div className="bg-pink-50/50 border border-pink-100 rounded-xl p-3.5 text-[11px] text-rose-900/70 space-y-1 leading-normal">
-                <span className="font-extrabold text-rose-900 uppercase tracking-wider block">Admin login (no email verification):</span>
-                <span className="block">admin@chadanicosmetic.com / admin123</span>
-                <span className="font-extrabold text-rose-900 uppercase tracking-wider block mt-2">Demo customer:</span>
-                <span className="block">jane@example.com / customer123</span>
-              </div>
-            )}
-
-            <div className="pt-4">
-              <Button
+            {/* Primary Action Button */}
+            <div className="pt-2">
+              <button
                 type="submit"
-                variant="primary"
-                size="lg"
-                fullWidth
-                loading={loading}
-                className="shadow-lg hover:shadow-xl hover:shadow-rose-900/10"
+                disabled={loading}
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-brand-dark text-brand-surface text-xs font-medium uppercase tracking-wider hover:bg-brand-accent disabled:opacity-50 transition-colors min-h-[44px] cursor-pointer"
               >
-                {mode === 'login' ? 'Sign In' : 'Sign Up'}
-              </Button>
+                {loading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  <span>Sign In</span>
+                )}
+              </button>
             </div>
           </form>
 
-          <div className="text-center pt-6 mt-6 border-t border-pink-50 text-xs font-semibold text-rose-900/60">
-            {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
-            <button
-              type="button"
-              onClick={toggleMode}
-              className="text-rose-700 hover:text-rose-900 underline font-bold cursor-pointer"
+          {/* Social Divider */}
+          <div className="relative flex items-center justify-center pt-1">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-brand-border/60" />
+            </div>
+            <span className="relative px-3 bg-brand-surface text-[10px] uppercase tracking-widest text-brand-muted">
+              Or continue with
+            </span>
+          </div>
+
+          {/* Secondary Google Sign-In */}
+          <GoogleSignInButton redirectTo={safeRedirect} />
+        </div>
+
+        {/* Navigation to Registration */}
+        <div className="text-center text-xs text-brand-muted space-y-2">
+          <p>
+            Do not have an account yet?{' '}
+            <Link
+              href={`/register${safeRedirect !== '/account' ? `?redirect=${encodeURIComponent(safeRedirect)}` : ''}`}
+              className="text-brand-dark font-medium underline hover:text-brand-accent transition-colors"
             >
-              {mode === 'login' ? 'Register here' : 'Sign in here'}
-            </button>
+              Create an account
+            </Link>
+          </p>
+          <div>
+            <Link
+              href="/"
+              className="text-[11px] text-brand-muted/70 hover:text-brand-dark transition-colors inline-flex items-center gap-1"
+            >
+              &larr; Return to storefront
+            </Link>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <React.Suspense
+    <Suspense
       fallback={
-        <div className="min-h-screen bg-pink-50/10 flex flex-col justify-center items-center gap-4 text-rose-950/40">
-          <Loader2 className="w-12 h-12 animate-spin text-rose-800" />
-          <span className="text-xs font-black uppercase tracking-[0.3em]">Loading authentication portal...</span>
+        <div className="min-h-[80vh] flex flex-col justify-center items-center gap-3 text-brand-muted">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-accent" />
+          <span className="text-xs font-mono uppercase tracking-widest">
+            Loading authentication...
+          </span>
         </div>
       }
     >
       <LoginContent />
-    </React.Suspense>
+    </Suspense>
   );
 }

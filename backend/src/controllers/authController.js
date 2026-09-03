@@ -11,7 +11,10 @@ const {
 const { formatUserForClient } = require('../utils/authPayload');
 const { upload, storeImage } = require('../utils/imageStorage');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cosmetics_and_bangles_secret_key_123456';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('[authController] JWT_SECRET environment variable is required');
+}
 
 /** Map Prisma/DB errors to clear API responses for admin customer actions */
 function respondCustomerActionError(res, error, action) {
@@ -48,6 +51,10 @@ const register = async (req, res) => {
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email, and password are required.' });
+    }
+
+    if (typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -508,8 +515,8 @@ const changePassword = async (req, res) => {
     if (!oldPassword || !newPassword) {
       return res.status(400).json({ error: 'Old and new passwords are required.' });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters.' });
     }
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
