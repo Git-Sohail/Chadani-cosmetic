@@ -20,6 +20,7 @@ function formatNpr(amount) {
 /**
  * Returns the effective selling price for a product.
  * If a valid discountPrice exists (greater than 0 and less than regular price), it takes priority.
+ * If oldPrice is higher than regular price, regular price is already the active sale price.
  */
 function getActivePrice(product) {
   if (!product) return 0;
@@ -28,7 +29,12 @@ function getActivePrice(product) {
     product.discountPrice !== null && product.discountPrice !== undefined
       ? Number(product.discountPrice)
       : null;
+  const oldPrice =
+    product.oldPrice !== null && product.oldPrice !== undefined
+      ? Number(product.oldPrice)
+      : null;
 
+  // Case 1: Valid discountPrice lower than regular price
   if (
     discountPrice !== null &&
     !Number.isNaN(discountPrice) &&
@@ -37,14 +43,26 @@ function getActivePrice(product) {
   ) {
     return discountPrice;
   }
+
+  // Case 2: oldPrice is higher than regular price (regular price is the active sale price)
+  if (
+    oldPrice !== null &&
+    !Number.isNaN(oldPrice) &&
+    oldPrice > regularPrice &&
+    regularPrice > 0
+  ) {
+    return regularPrice;
+  }
+
   return regularPrice;
 }
 
 const DHARAN_DELIVERY_FEE = 100;
 
 function calculateOrderTotal(subtotal) {
-  if (!subtotal || subtotal <= 0) return 0;
-  return subtotal + DHARAN_DELIVERY_FEE;
+  const numSubtotal = Number(subtotal);
+  if (!numSubtotal || numSubtotal <= 0) return 0;
+  return numSubtotal + DHARAN_DELIVERY_FEE;
 }
 
 module.exports = {

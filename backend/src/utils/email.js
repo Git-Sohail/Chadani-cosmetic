@@ -140,7 +140,7 @@ const sendOrderConfirmationEmail = async (order, customerEmail) => {
   
   let productsHtml = '';
   order.orderItems.forEach(item => {
-    const itemSubtotal = item.price * item.quantity;
+    const itemSubtotal = item.subtotal != null ? Number(item.subtotal) : (Number(item.price) * Number(item.quantity));
     productsHtml += `
       <tr style="border-b: 1px solid #ffe4e6;">
         <td style="padding: 12px; vertical-align: middle;">
@@ -160,11 +160,14 @@ const sendOrderConfirmationEmail = async (order, customerEmail) => {
   });
 
   const productsSubtotal = (order.orderItems || []).reduce(
-    (sum, item) => sum + (item.price * item.quantity),
+    (sum, item) => sum + Number(item.subtotal != null ? item.subtotal : (item.price * item.quantity)),
     0
   );
-  const deliveryFee =
-    order.totalAmount > productsSubtotal ? order.totalAmount - productsSubtotal : 100;
+  const deliveryFee = 100; // Flat Dharan Delivery
+  const totalAmount =
+    order.totalAmount > productsSubtotal
+      ? Number(order.totalAmount)
+      : (productsSubtotal > 0 ? productsSubtotal + deliveryFee : Number(order.totalAmount));
 
   const html = `
     <div style="font-family: 'Playfair Display', 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 40px 20px; background-color: #fffafb; border: 1px solid #ffe4e6; border-radius: 24px; color: #4c0519;">
@@ -211,7 +214,7 @@ const sendOrderConfirmationEmail = async (order, customerEmail) => {
             <tr style="border-top: 2px solid #fda4af;">
               <td colspan="2"></td>
               <td style="padding: 12px; text-align: right; font-weight: bold; color: #4c0519; font-size: 14px;">Total Amount:</td>
-              <td style="padding: 12px; text-align: right; font-weight: 900; font-size: 18px; color: #9f1239;">${formatNpr(order.totalAmount)}</td>
+              <td style="padding: 12px; text-align: right; font-weight: 900; font-size: 18px; color: #9f1239;">${formatNpr(totalAmount)}</td>
             </tr>
           </tfoot>
         </table>
@@ -228,7 +231,7 @@ const sendOrderConfirmationEmail = async (order, customerEmail) => {
     to: customerEmail,
     subject,
     html,
-    text: `Hello ${order.customerName},\n\nYour order #${order.id.slice(0, 8)} has been confirmed! Total: ${formatNpr(order.totalAmount)}.\n\nThank you for shopping at Chadani Cosmetic Store!`,
+    text: `Hello ${order.customerName},\n\nYour order #${order.id.slice(0, 8)} has been confirmed! Total: ${formatNpr(totalAmount)}.\n\nThank you for shopping at Chadani Cosmetic Store!`,
   });
 };
 
@@ -265,7 +268,13 @@ const sendOrderStatusUpdateEmail = async (order, customerEmail) => {
         
         <p style="font-size: 14px; line-height: 1.6; color: #4c0519; margin-bottom: 0; text-align: left;">
           <strong>Order Summary:</strong><br />
-          • Total Amount: ${formatNpr(order.totalAmount)}<br />
+          • Total Amount: ${formatNpr(
+            order.totalAmount > (order.orderItems || []).reduce((sum, item) => sum + Number(item.subtotal != null ? item.subtotal : item.price * item.quantity), 0)
+              ? Number(order.totalAmount)
+              : (order.orderItems && order.orderItems.length > 0
+                  ? (order.orderItems || []).reduce((sum, item) => sum + Number(item.subtotal != null ? item.subtotal : item.price * item.quantity), 0) + 100
+                  : Number(order.totalAmount))
+          )}<br />
           • Payment Method: ${order.paymentMethod}<br />
           • Shipping Address: ${order.address}
         </p>
@@ -276,11 +285,18 @@ const sendOrderStatusUpdateEmail = async (order, customerEmail) => {
     </div>
   `;
 
+  const totalAmount =
+    order.totalAmount > (order.orderItems || []).reduce((sum, item) => sum + Number(item.subtotal != null ? item.subtotal : item.price * item.quantity), 0)
+      ? Number(order.totalAmount)
+      : (order.orderItems && order.orderItems.length > 0
+          ? (order.orderItems || []).reduce((sum, item) => sum + Number(item.subtotal != null ? item.subtotal : item.price * item.quantity), 0) + 100
+          : Number(order.totalAmount));
+
   return sendEmail({
     to: customerEmail,
     subject,
     html,
-    text: `Hello ${order.customerName},\n\nYour order #${order.id.slice(0, 8)} status has been updated to: ${statusLabel}.\n\nThank you for choosing Chadani Cosmetic Store!`,
+    text: `Hello ${order.customerName},\n\nYour order #${order.id.slice(0, 8)} status has been updated to: ${statusLabel}. Total: ${formatNpr(totalAmount)}.\n\nThank you for choosing Chadani Cosmetic Store!`,
   });
 };
 

@@ -185,12 +185,12 @@ export function CartProvider({ children }) {
     }
   };
 
-  const cartSubtotal = cartItems.reduce(
+  const productsSubtotal = cartItems.reduce(
     (acc, item) => acc + (getActivePrice(item.product) * item.quantity),
     0
   );
   const deliveryFee = cartItems.length > 0 ? DHARAN_DELIVERY_FEE : 0;
-  const cartTotal = calculateOrderTotal(cartSubtotal);
+  const finalTotal = productsSubtotal > 0 ? productsSubtotal + deliveryFee : 0;
 
   return (
     <CartContext.Provider value={{
@@ -200,9 +200,11 @@ export function CartProvider({ children }) {
       updateQuantity,
       deleteCartItem,
       clearCart,
-      cartSubtotal,
+      productsSubtotal,
+      cartSubtotal: productsSubtotal,
       deliveryFee,
-      cartTotal,
+      finalTotal,
+      cartTotal: finalTotal,
       fetchCart
     }}>
       {children}

@@ -1023,7 +1023,7 @@ export default function AdminPanel({ activeTab = 'dashboard' }) {
                   {formatPrice(stats.deliveredRevenue)}
                 </p>
                 <span className="text-[9px] text-brand-muted/70 block">
-                  Fulfilled & completed orders
+                  Includes flat delivery (fulfilled orders)
                 </span>
               </div>
 

@@ -238,12 +238,14 @@ export default function OrderHistoryCard({
 
   // Derive products subtotal from snapshot prices
   const productsSubtotal = items.reduce(
-    (sum, i) => sum + (i.subtotal ?? i.price * i.quantity),
+    (sum, i) => sum + (Number(i.subtotal ?? i.price * i.quantity) || 0),
     0
   );
-  // Delivery fee is difference between order.totalAmount and productsSubtotal (default Rs. 100)
-  const deliveryFee =
-    order.totalAmount > productsSubtotal ? order.totalAmount - productsSubtotal : 100;
+  const deliveryFee = 100; // Flat Dharan Delivery
+  const authoritativeTotal =
+    order.totalAmount > productsSubtotal
+      ? Number(order.totalAmount)
+      : (productsSubtotal > 0 ? productsSubtotal + deliveryFee : Number(order.totalAmount));
 
   const handleCancelClick = async () => {
     if (
@@ -311,7 +313,7 @@ export default function OrderHistoryCard({
               Total Order Due
             </span>
             <p className="font-serif text-xl sm:text-2xl font-semibold text-brand-dark">
-              {formatPrice(order.totalAmount)}
+              {formatPrice(authoritativeTotal)}
             </p>
             <span className="text-[10px] text-brand-muted block">
               Includes Rs. {deliveryFee} Dharan Delivery
@@ -489,7 +491,7 @@ export default function OrderHistoryCard({
                 <span className="font-sans text-xs font-semibold uppercase tracking-wider text-brand-dark">
                   Grand Total
                 </span>
-                <span className="text-xl font-semibold">{formatPrice(order.totalAmount)}</span>
+                <span className="text-xl font-semibold">{formatPrice(authoritativeTotal)}</span>
               </div>
             </div>
 
