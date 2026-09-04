@@ -27,6 +27,86 @@ import { useCart } from '../../../../context/CartContext';
 import { useWishlist } from '../../../../context/WishlistContext';
 import { formatPrice, getProductPricing } from '../../../../utils/currency';
 
+function parseProductContent(rawDescription, product) {
+  if (!rawDescription) {
+    return {
+      summary: 'Authentic formulation curated by Chadani Cosmetic for daily beauty ritual.',
+      accordions: [],
+    };
+  }
+
+  const text = rawDescription.trim();
+
+  // Pattern detection for explicit sections
+  const sectionKeywords = [
+    { key: 'benefits', title: 'Key Benefits', regex: /(?:key benefits?|benefits?)\s*[:\-–]\s*/i },
+    { key: 'howToUse', title: 'How to Use', regex: /(?:how to use|directions?|application|usage)\s*[:\-–]\s*/i },
+    { key: 'ingredients', title: 'Ingredients & Composition', regex: /(?:ingredients?|composition)\s*[:\-–]\s*/i },
+    { key: 'details', title: 'Product Details', regex: /(?:product details?|specifications?|about)\s*[:\-–]\s*/i },
+  ];
+
+  const matches = [];
+  sectionKeywords.forEach((kw) => {
+    const idx = text.search(kw.regex);
+    if (idx !== -1) {
+      matches.push({ key: kw.key, title: kw.title, index: idx, regex: kw.regex });
+    }
+  });
+
+  matches.sort((a, b) => a.index - b.index);
+
+  let intro = text;
+  const accordions = [];
+
+  if (matches.length > 0) {
+    intro = text.slice(0, matches[0].index).trim();
+    for (let i = 0; i < matches.length; i++) {
+      const curr = matches[i];
+      const nextIdx = i + 1 < matches.length ? matches[i + 1].index : text.length;
+      const rawChunk = text.slice(curr.index, nextIdx).trim();
+      const content = rawChunk.replace(curr.regex, '').trim();
+      if (content) {
+        accordions.push({
+          id: curr.key,
+          title: curr.title,
+          content,
+        });
+      }
+    }
+  }
+
+  // Create a concise 2-4 line summary from intro
+  let summary = intro;
+  const paragraphs = intro.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  if (paragraphs.length > 1) {
+    summary = paragraphs[0];
+  } else {
+    const sentences = intro.split(/(?<=[.!?])\s+/);
+    if (sentences.length > 2 && intro.length > 190) {
+      summary = sentences.slice(0, 2).join(' ');
+    }
+  }
+
+  // If no explicit sections were found, provide Product Details with the remaining or full text
+  if (accordions.length === 0) {
+    const remaining = text.replace(summary, '').trim();
+    accordions.push({
+      id: 'details',
+      title: 'Product Details',
+      content: remaining || text,
+    });
+  }
+
+  // Always include Authenticity & Dharan Dispatch policy section
+  accordions.push({
+    id: 'dispatch',
+    title: 'Authenticity & Dharan Dispatch',
+    content: `100% genuine formulation sourced directly from authorized beauty distributors. Hand-inspected and packed in Dharan with flat Rs. 100 doorstep delivery. SKU: ${product?.sku || 'CHD-PRD'}.`,
+  });
+
+  return { summary: summary || text, accordions };
+}
+
 export default function ProductDetails() {
   const { API_URL } = useAuth();
   const { addToCart } = useCart();
@@ -45,6 +125,7 @@ export default function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState('details');
 
   const wishlisted = product ? isWishlisted(product.id) : false;
 
@@ -93,7 +174,7 @@ export default function ProductDetails() {
   const handleAddToCart = async () => {
     if (product && product.stock > 0) {
       await addToCart(product, quantity);
-      toast(`Added ${quantity} × "${product.name}" to cart`, 'success');
+      toast(`Added ${quantity} × "${product.name}" to bag`, 'success');
     }
   };
 
@@ -108,19 +189,41 @@ export default function ProductDetails() {
     }
   };
 
+  const toggleAccordion = (id) => {
+    setOpenAccordion((prev) => (prev === id ? null : id));
+  };
+
+  // Recognize brand from title prefix or fallback to category name
+  const brandOrCategory = useMemo(() => {
+    if (!product) return '';
+    const name = product.name || '';
+    const knownBrands = [
+      'Mamaearth', 'Cetaphil', 'Minimalist', 'The Ordinary', 'Plum', 'Dot & Key',
+      'Garnier', "L'Oreal", 'Biotique', 'Neutrogena', 'COSRX', 'Innisfree',
+      'Derma Co', 'Himalaya', 'Nivea', 'Dove', 'Tresemme', 'Maybelline', 'Lakme',
+      'Swiss Beauty', 'Insight', 'Faces Canada', 'Colorbar'
+    ];
+    const matched = knownBrands.find((b) => name.toLowerCase().startsWith(b.toLowerCase()));
+    return matched || product.category?.name || 'Cosmetic Essentials';
+  }, [product]);
+
+  const { summary, accordions } = useMemo(() => {
+    return parseProductContent(product?.description, product);
+  }, [product]);
+
   if (loading) {
     return (
       <div className="bg-brand-bg min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 animate-pulse">
-          <div className="h-4 bg-brand-border/60 w-32 mb-8 rounded" />
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 bg-brand-surface border border-brand-border p-6 sm:p-10">
-            <div className="lg:col-span-6 aspect-[4/5] bg-brand-border/40" />
-            <div className="lg:col-span-6 space-y-6 pt-4">
+        <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 animate-pulse">
+          <div className="h-4 bg-brand-border/60 w-32 mb-6 rounded" />
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 bg-brand-surface border border-brand-border p-6 sm:p-8">
+            <div className="w-full lg:w-[46%] aspect-[4/5] bg-brand-border/40" />
+            <div className="w-full lg:w-[54%] space-y-4 pt-2">
               <div className="h-3 bg-brand-border/40 w-1/4" />
-              <div className="h-8 bg-brand-border/40 w-3/4" />
+              <div className="h-7 bg-brand-border/40 w-3/4" />
               <div className="h-6 bg-brand-border/40 w-1/3" />
-              <div className="h-24 bg-brand-border/40 w-full" />
-              <div className="h-12 bg-brand-border/40 w-full" />
+              <div className="h-16 bg-brand-border/40 w-full" />
+              <div className="h-11 bg-brand-border/40 w-full" />
             </div>
           </div>
         </div>
@@ -175,9 +278,9 @@ export default function ProductDetails() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
         {/* Navigation Breadcrumb & Back */}
-        <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8 text-xs text-brand-muted">
+        <div className="flex items-center justify-between gap-4 mb-4 sm:mb-6 text-xs text-brand-muted">
           <button
             type="button"
             onClick={() => router.back()}
@@ -187,48 +290,48 @@ export default function ProductDetails() {
             <span>Back</span>
           </button>
 
-          <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-2">
-            <Link href="/" className="hover:text-brand-dark">Home</Link>
-            <span>/</span>
-            <Link href="/shop" className="hover:text-brand-dark">Catalogue</Link>
+          <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-2 text-[11px]">
+            <Link href="/" className="hover:text-brand-dark transition-colors">Home</Link>
+            <span className="text-brand-border">/</span>
+            <Link href="/shop" className="hover:text-brand-dark transition-colors">Catalogue</Link>
             {product.category && (
               <>
-                <span>/</span>
-                <Link href={`/shop?category=${product.categoryId}`} className="hover:text-brand-dark">
+                <span className="text-brand-border">/</span>
+                <Link href={`/shop?category=${product.categoryId}`} className="hover:text-brand-dark transition-colors">
                   {product.category.name}
                 </Link>
               </>
             )}
-            <span>/</span>
-            <span className="text-brand-dark font-medium truncate max-w-[200px]">{product.name}</span>
+            <span className="text-brand-border">/</span>
+            <span className="text-brand-dark font-medium truncate max-w-[220px]">{product.name}</span>
           </nav>
         </div>
 
-        {/* Primary Product Showcase: 2-Column Balanced Architecture */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 bg-brand-surface border border-brand-border p-5 sm:p-8 lg:p-12 mb-16 sm:mb-20">
-          {/* Left Column: Image Gallery */}
-          <div className="lg:col-span-6 space-y-4">
-            <div className="relative aspect-[4/5] bg-brand-bg border border-brand-border overflow-hidden group">
+        {/* Primary Product Showcase: Balanced Proportions (Left 46% / Right 54%) */}
+        <div className="flex flex-col lg:flex-row gap-7 lg:gap-11 bg-brand-surface border border-brand-border/80 p-4 sm:p-6 lg:p-8 mb-12 sm:mb-16">
+          {/* Left Column: Image Gallery (46% width on desktop) */}
+          <div className="w-full lg:w-[46%] shrink-0 space-y-3">
+            <div className="relative aspect-[4/5] max-h-[500px] sm:max-h-[540px] lg:max-h-[560px] bg-brand-bg/50 border border-brand-border/70 overflow-hidden group flex items-center justify-center">
               {/* Discount / Sale Flag */}
               {(product.isSale || pricing.hasDiscount) && (
-                <span className="absolute top-4 left-4 z-10 px-2.5 py-1 bg-brand-dark text-brand-surface text-[10px] font-medium tracking-[0.16em] uppercase">
+                <span className="absolute top-3 left-3 z-10 px-2 py-0.5 bg-brand-dark text-brand-surface text-[9px] font-medium tracking-[0.16em] uppercase">
                   {pricing.discountPercent ? `-${pricing.discountPercent}%` : 'Special'}
                 </span>
               )}
 
-              {/* Main Image */}
+              {/* Main Image with Containment */}
               {activeImage ? (
                 <Image
                   src={activeImage}
                   alt={product.name}
                   fill
                   priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover object-center cursor-zoom-in transition-transform duration-700 hover:scale-102"
+                  sizes="(max-width: 1024px) 100vw, 46vw"
+                  className="object-contain p-4 sm:p-6 cursor-zoom-in transition-transform duration-700 hover:scale-103"
                   onClick={() => setLightboxOpen(true)}
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center font-serif text-brand-muted/40 italic text-lg">
+                <div className="w-full h-full flex items-center justify-center font-serif text-brand-muted/40 italic text-base">
                   {product.category?.name || 'Product'}
                 </div>
               )}
@@ -238,43 +341,43 @@ export default function ProductDetails() {
                 <button
                   type="button"
                   onClick={() => setLightboxOpen(true)}
-                  className="absolute bottom-4 right-4 w-9 h-9 bg-brand-surface/90 border border-brand-border flex items-center justify-center text-brand-dark hover:text-brand-accent hover:border-brand-accent transition-all cursor-pointer opacity-90 sm:opacity-0 sm:group-hover:opacity-100"
+                  className="absolute bottom-3 right-3 w-8 h-8 bg-brand-surface/90 border border-brand-border flex items-center justify-center text-brand-dark hover:text-brand-accent hover:border-brand-accent transition-all cursor-pointer opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
                   aria-label="Inspect image in fullscreen"
                 >
-                  <ZoomIn className="w-4 h-4" />
+                  <ZoomIn className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Thumbnail Navigator (Only if multiple images exist) */}
+            {/* Thumbnail Navigator (Compact Row) */}
             {galleryImages.length > 1 && (
-              <div className="flex gap-2.5 overflow-x-auto pb-1">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {galleryImages.map((img, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => setActiveImageIndex(idx)}
-                    className={`relative w-16 sm:w-20 aspect-[4/5] bg-brand-bg border overflow-hidden shrink-0 transition-all cursor-pointer ${
+                    className={`relative w-14 h-16 sm:w-16 sm:h-18 aspect-[4/5] bg-brand-bg/50 border overflow-hidden shrink-0 transition-all cursor-pointer p-1 ${
                       activeImageIndex === idx
                         ? 'border-brand-dark ring-1 ring-brand-dark'
-                        : 'border-brand-border opacity-70 hover:opacity-100'
+                        : 'border-brand-border/70 opacity-70 hover:opacity-100'
                     }`}
                     aria-label={`View photo ${idx + 1}`}
                   >
-                    <Image src={img} alt="" fill sizes="80px" className="object-cover" />
+                    <Image src={img} alt="" fill sizes="70px" className="object-contain" />
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Right Column: Hierarchy & Purchase Area */}
-          <div className="lg:col-span-6 flex flex-col justify-between space-y-6">
-            <div className="space-y-4">
-              {/* Category & Rating */}
+          {/* Right Column: Hierarchy & Purchase Area (54% width on desktop) */}
+          <div className="w-full lg:w-[54%] flex flex-col justify-between">
+            <div className="space-y-3.5">
+              {/* Brand/Category Eyebrow & Star Rating */}
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-brand-accent">
-                  {product.category?.name || 'Cosmetics'}
+                <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.24em] text-brand-accent">
+                  {brandOrCategory}
                 </span>
 
                 <div className="flex items-center gap-1.5 text-xs text-brand-dark">
@@ -290,128 +393,150 @@ export default function ProductDetails() {
                       />
                     ))}
                   </div>
-                  <span className="text-brand-muted font-medium">
+                  <span className="text-brand-muted font-medium text-[11px]">
                     {product.rating ? Number(product.rating).toFixed(1) : '5.0'}
                   </span>
                 </div>
               </div>
 
-              {/* Title */}
-              <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-brand-dark font-normal tracking-tight leading-snug">
+              {/* Product Title: Compact Cormorant Garamond */}
+              <h1 className="font-serif text-xl sm:text-2xl lg:text-[clamp(1.75rem,2.3vw,2.5rem)] text-brand-dark font-normal tracking-tight leading-[1.12]">
                 {product.name}
               </h1>
 
-              {/* Pricing Display */}
-              <div className="flex items-baseline gap-3 pt-1">
-                <span className="text-2xl sm:text-3xl font-medium text-brand-dark">
+              {/* Pricing Display: Prominent & Refined (30-34px) with subtle strikethrough */}
+              <div className="flex items-baseline gap-2.5 pt-0.5 flex-wrap">
+                <span className="font-serif text-2xl sm:text-3xl lg:text-[32px] font-medium text-brand-dark tracking-tight leading-none">
                   {formatPrice(pricing.activePrice)}
                 </span>
                 {pricing.oldPrice && (
-                  <span className="text-sm sm:text-base text-brand-muted/60 line-through">
+                  <span className="text-xs sm:text-sm text-brand-muted/60 line-through font-sans">
                     {formatPrice(pricing.oldPrice)}
                   </span>
                 )}
                 {pricing.discountPercent && (
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-brand-accent border border-brand-accent/40 px-2 py-0.5">
+                  <span className="text-[9px] uppercase tracking-wider font-medium text-brand-accent border border-brand-accent/40 px-2 py-0.5">
                     Save {pricing.discountPercent}%
                   </span>
                 )}
               </div>
 
-              {/* Stock Status Indicator */}
-              <div className="pt-1">
+              {/* Stock Status Indicator: Quiet, Refined Pill Badge */}
+              <div>
                 {product.stock <= 0 ? (
-                  <span className="inline-flex items-center text-[10px] uppercase tracking-[0.16em] font-medium text-red-700 bg-red-50 border border-red-200 px-2.5 py-1">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.14em] font-medium text-red-700 bg-red-50/70 border border-red-200/80 rounded-full">
                     Currently Out of Stock
                   </span>
                 ) : product.stock < 5 ? (
-                  <span className="inline-flex items-center text-[10px] uppercase tracking-[0.16em] font-medium text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1">
-                    Limited Stock: {product.stock} items remaining
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.14em] font-medium text-brand-accent bg-brand-bg border border-brand-accent/30 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse" />
+                    Limited stock &bull; {product.stock} remaining
                   </span>
                 ) : (
-                  <span className="inline-flex items-center text-[10px] uppercase tracking-[0.16em] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.14em] font-medium text-emerald-800 bg-emerald-50/50 border border-emerald-200/80 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
                     In Stock &bull; Ready for Dharan Dispatch
                   </span>
                 )}
               </div>
 
-              {/* Product Description */}
-              <div className="pt-2 text-xs sm:text-sm text-brand-muted leading-relaxed border-t border-brand-border/60">
-                <p>{product.description}</p>
+              {/* Concise Product Introduction (2–4 lines) */}
+              <div className="pt-2 text-xs sm:text-[13px] text-brand-muted leading-relaxed border-t border-brand-border/60">
+                <p className="line-clamp-3">{summary}</p>
               </div>
-            </div>
 
-            {/* Purchasing Controls */}
-            {product.stock > 0 && (
-              <div className="pt-4 border-t border-brand-border/60 space-y-4">
-                {/* Quantity Control */}
-                <div className="flex items-center gap-4">
-                  <label htmlFor="qty-select" className="text-xs font-medium text-brand-muted uppercase tracking-wider">
-                    Quantity
-                  </label>
-                  <div className="inline-flex items-center border border-brand-border bg-brand-bg rounded">
+              {/* Purchasing Controls: Quantity + Primary Add to Cart */}
+              {product.stock > 0 && (
+                <div className="pt-3 border-t border-brand-border/60 space-y-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Compact Quantity Selector (120-130px × 44-46px) */}
+                    <div className="w-full sm:w-[124px] h-[46px] border border-brand-border bg-brand-surface rounded-xs inline-flex items-center justify-between shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleDecrement}
+                        disabled={quantity <= 1}
+                        className="w-9 h-full flex items-center justify-center text-brand-dark hover:bg-brand-bg transition-colors disabled:opacity-30 cursor-pointer"
+                        aria-label="Decrease quantity"
+                      >
+                        &minus;
+                      </button>
+                      <span className="w-8 text-center text-xs font-semibold text-brand-dark font-mono">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleIncrement}
+                        disabled={quantity >= product.stock}
+                        className="w-9 h-full flex items-center justify-center text-brand-dark hover:bg-brand-bg transition-colors disabled:opacity-30 cursor-pointer"
+                        aria-label="Increase quantity"
+                      >
+                        &#43;
+                      </button>
+                    </div>
+
+                    {/* Primary Add to Shopping Bag Action */}
+                    <Button
+                      onClick={handleAddToCart}
+                      variant="primary"
+                      size="md"
+                      className="flex-1 h-[46px] py-0 tracking-[0.16em] uppercase text-xs font-medium"
+                    >
+                      <ShoppingBag className="w-4 h-4 mr-2 shrink-0" />
+                      <span>Add to Shopping Bag</span>
+                    </Button>
+
+                    {/* Wishlist Toggle Button */}
                     <button
                       type="button"
-                      onClick={handleDecrement}
-                      disabled={quantity <= 1}
-                      className="w-9 h-9 flex items-center justify-center text-brand-dark hover:bg-brand-surface disabled:opacity-30 cursor-pointer min-h-[44px] min-w-[44px]"
-                      aria-label="Decrease quantity"
+                      onClick={handleWishlistToggle}
+                      className={`w-[46px] h-[46px] border flex items-center justify-center transition-colors cursor-pointer shrink-0 rounded-xs ${
+                        wishlisted
+                          ? 'bg-brand-dark border-brand-dark text-brand-surface'
+                          : 'border-brand-border bg-brand-surface text-brand-dark hover:border-brand-accent'
+                      }`}
+                      aria-label={wishlisted ? 'Remove from wishlist' : 'Save to wishlist'}
                     >
-                      &minus;
-                    </button>
-                    <span id="qty-select" className="w-10 text-center text-xs font-semibold text-brand-dark font-mono">
-                      {quantity}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleIncrement}
-                      disabled={quantity >= product.stock}
-                      className="w-9 h-9 flex items-center justify-center text-brand-dark hover:bg-brand-surface disabled:opacity-30 cursor-pointer min-h-[44px] min-w-[44px]"
-                      aria-label="Increase quantity"
-                    >
-                      &#43;
+                      <Heart className={`w-4 h-4 ${wishlisted ? 'fill-current' : ''}`} />
                     </button>
                   </div>
                 </div>
+              )}
 
-                {/* Primary Add to Cart & Wishlist Actions */}
-                <div className="flex gap-3">
-                  <Button
-                    onClick={handleAddToCart}
-                    variant="primary"
-                    size="lg"
-                    className="flex-1 py-3.5 tracking-[0.18em] uppercase text-xs min-h-[44px]"
-                  >
-                    <ShoppingBag className="w-4 h-4 mr-2" />
-                    <span>Add to Shopping Bag</span>
-                  </Button>
+              {/* Factual Delivery Information: Subtle Supporting Row */}
+              <div className="flex items-center gap-2 text-[11px] sm:text-xs text-brand-muted pt-3 border-t border-brand-border/50">
+                <MapPin className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+                <span>Dharan Delivery &bull; Flat Rs. 100 &bull; Cash on Delivery</span>
+              </div>
+            </div>
 
-                  <button
-                    type="button"
-                    onClick={handleWishlistToggle}
-                    className={`px-4 border flex items-center justify-center transition-colors cursor-pointer min-h-[44px] min-w-[44px] ${
-                      wishlisted
-                        ? 'bg-brand-dark border-brand-dark text-brand-surface'
-                        : 'border-brand-border bg-brand-surface text-brand-dark hover:border-brand-accent'
-                    }`}
-                    aria-label={wishlisted ? 'Remove from wishlist' : 'Save to wishlist'}
-                  >
-                    <Heart className={`w-4 h-4 ${wishlisted ? 'fill-current' : ''}`} />
-                  </button>
-                </div>
+            {/* Detailed Product Information: Clean Structured Accordions */}
+            {accordions.length > 0 && (
+              <div className="mt-6 pt-2 border-t border-brand-border/60">
+                {accordions.map((sec) => {
+                  const isOpen = openAccordion === sec.id;
+                  return (
+                    <div key={sec.id} className="border-b border-brand-border/50 last:border-b-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleAccordion(sec.id)}
+                        className="w-full py-3 flex items-center justify-between text-left text-xs font-medium uppercase tracking-[0.14em] text-brand-dark hover:text-brand-accent transition-colors cursor-pointer group"
+                        aria-expanded={isOpen}
+                      >
+                        <span>{sec.title}</span>
+                        <span className="text-brand-muted text-sm group-hover:text-brand-accent transition-colors font-mono">
+                          {isOpen ? '−' : '+'}
+                        </span>
+                      </button>
+                      {isOpen && (
+                        <div className="pb-3.5 text-xs text-brand-muted leading-relaxed whitespace-pre-line animate-fadeIn">
+                          {sec.content}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
-
-            {/* Factual Delivery & Policy Block (Requirement 1 & 16) */}
-            <div className="border border-brand-border bg-brand-bg p-4 space-y-2 text-xs text-brand-muted">
-              <div className="flex items-center gap-2 text-brand-dark font-medium text-xs">
-                <MapPin className="w-3.5 h-3.5 text-brand-accent shrink-0" />
-                <span>Delivery in Dharan &bull; Flat Rs. 100</span>
-              </div>
-              <p className="text-[11px] leading-relaxed">
-                Direct doorstep delivery across all Dharan wards. Cash on Delivery is available upon arrival.
-              </p>
-            </div>
           </div>
         </div>
 
