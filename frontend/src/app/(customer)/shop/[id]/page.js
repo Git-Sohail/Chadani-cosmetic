@@ -87,21 +87,25 @@ function parseProductContent(rawDescription, product) {
     }
   }
 
-  // If no explicit sections were found, provide Product Details with the remaining or full text
+  // If no explicit sections were found, provide Product Details with full text & usage
   if (accordions.length === 0) {
-    const remaining = text.replace(summary, '').trim();
     accordions.push({
       id: 'details',
-      title: 'Product Details',
-      content: remaining || text,
+      title: 'Product Details & Description',
+      content: text,
+    });
+    accordions.push({
+      id: 'usage',
+      title: 'How to Use & Application',
+      content: 'Apply a coin-sized amount onto damp face and neck. Gently massage in upward circular motions for 1–2 minutes, avoiding direct contact with eyes. Rinse thoroughly with lukewarm water and pat dry. Recommended for daily morning and evening skincare rituals.',
     });
   }
 
   // Always include Authenticity & Dharan Dispatch policy section
   accordions.push({
     id: 'dispatch',
-    title: 'Authenticity & Dharan Dispatch',
-    content: `100% genuine formulation sourced directly from authorized beauty distributors. Hand-inspected and packed in Dharan with flat Rs. 100 doorstep delivery. SKU: ${product?.sku || 'CHD-PRD'}.`,
+    title: 'Authenticity & Dharan Dispatch Guarantee',
+    content: `100% genuine formulation sourced directly from authorized beauty distributors. Hand-inspected and packed in Dharan with flat Rs. 100 doorstep delivery across all Dharan wards. Cash on delivery available. SKU: ${product?.sku || 'CHD-PRD'}.`,
   });
 
   return { summary: summary || text, accordions };
@@ -211,6 +215,24 @@ export default function ProductDetails() {
     return parseProductContent(product?.description, product);
   }, [product]);
 
+  // Extract key cosmetic attributes for quick scanning
+  const productSpecs = useMemo(() => {
+    if (!product) return [];
+    const specs = [];
+    const volMatch = product.name?.match(/\b\d+(\.\d+)?\s*(ml|g|gm|kg|oz|l)\b/i);
+    if (volMatch) {
+      specs.push({ label: 'Size', value: volMatch[0] });
+    }
+    if (product.category?.name) {
+      specs.push({ label: 'Category', value: product.category.name });
+    }
+    specs.push({ label: 'Formulation', value: 'Dermatologically Curated' });
+    if (product.sku) {
+      specs.push({ label: 'SKU', value: product.sku });
+    }
+    return specs;
+  }, [product]);
+
   if (loading) {
     return (
       <div className="bg-brand-bg min-h-screen">
@@ -308,10 +330,10 @@ export default function ProductDetails() {
         </div>
 
         {/* Primary Product Showcase: Balanced Proportions (Left 46% / Right 54%) */}
-        <div className="flex flex-col lg:flex-row gap-7 lg:gap-11 bg-brand-surface border border-brand-border/80 p-4 sm:p-6 lg:p-8 mb-12 sm:mb-16">
+        <div className="flex flex-col lg:flex-row items-start gap-7 lg:gap-11 bg-brand-surface border border-brand-border/80 p-5 sm:p-7 lg:p-9 mb-12 sm:mb-16">
           {/* Left Column: Image Gallery (46% width on desktop) */}
           <div className="w-full lg:w-[46%] shrink-0 space-y-3">
-            <div className="relative aspect-[4/5] max-h-[500px] sm:max-h-[540px] lg:max-h-[560px] bg-brand-bg/50 border border-brand-border/70 overflow-hidden group flex items-center justify-center">
+            <div className="relative aspect-[4/5] max-h-[480px] sm:max-h-[520px] lg:max-h-[530px] bg-brand-bg/50 border border-brand-border/70 overflow-hidden group flex items-center justify-center">
               {/* Discount / Sale Flag */}
               {(product.isSale || pricing.hasDiscount) && (
                 <span className="absolute top-3 left-3 z-10 px-2 py-0.5 bg-brand-dark text-brand-surface text-[9px] font-medium tracking-[0.16em] uppercase">
@@ -372,146 +394,184 @@ export default function ProductDetails() {
           </div>
 
           {/* Right Column: Hierarchy & Purchase Area (54% width on desktop) */}
-          <div className="w-full lg:w-[54%] flex flex-col justify-between">
-            <div className="space-y-3.5">
-              {/* Brand/Category Eyebrow & Star Rating */}
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.24em] text-brand-accent">
-                  {brandOrCategory}
-                </span>
+          <div className="w-full lg:w-[54%] flex flex-col space-y-4">
+            {/* Brand/Category Eyebrow & Star Rating */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-brand-accent">
+                {brandOrCategory}
+              </span>
 
-                <div className="flex items-center gap-1.5 text-xs text-brand-dark">
-                  <div className="flex items-center text-brand-accent">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Star
-                        key={s}
-                        className={`w-3.5 h-3.5 ${
-                          s <= Math.round(product.rating || 5)
-                            ? 'fill-brand-accent text-brand-accent'
-                            : 'text-brand-border fill-transparent'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-brand-muted font-medium text-[11px]">
-                    {product.rating ? Number(product.rating).toFixed(1) : '5.0'}
-                  </span>
+              <a
+                href="#reviews"
+                className="flex items-center gap-1.5 text-xs text-brand-dark hover:text-brand-accent transition-colors"
+                title="Jump to customer reviews"
+              >
+                <div className="flex items-center text-brand-accent">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      className={`w-3.5 h-3.5 ${
+                        s <= Math.round(product.rating || 5)
+                          ? 'fill-brand-accent text-brand-accent'
+                          : 'text-brand-border fill-transparent'
+                      }`}
+                    />
+                  ))}
                 </div>
-              </div>
-
-              {/* Product Title: Compact Cormorant Garamond */}
-              <h1 className="font-serif text-xl sm:text-2xl lg:text-[clamp(1.75rem,2.3vw,2.5rem)] text-brand-dark font-normal tracking-tight leading-[1.12]">
-                {product.name}
-              </h1>
-
-              {/* Pricing Display: Prominent & Refined (30-34px) with subtle strikethrough */}
-              <div className="flex items-baseline gap-2.5 pt-0.5 flex-wrap">
-                <span className="font-serif text-2xl sm:text-3xl lg:text-[32px] font-medium text-brand-dark tracking-tight leading-none">
-                  {formatPrice(pricing.activePrice)}
+                <span className="text-brand-muted font-medium text-[11px]">
+                  {product.rating ? Number(product.rating).toFixed(1) : '5.0'}
                 </span>
-                {pricing.oldPrice && (
-                  <span className="text-xs sm:text-sm text-brand-muted/60 line-through font-sans">
-                    {formatPrice(pricing.oldPrice)}
+                <span className="text-brand-muted/70 text-[11px]">
+                  (Reviews)
+                </span>
+              </a>
+            </div>
+
+            {/* Product Title: Compact Cormorant Garamond */}
+            <h1 className="font-serif text-xl sm:text-2xl lg:text-[clamp(1.75rem,2.2vw,2.35rem)] text-brand-dark font-normal tracking-tight leading-[1.14]">
+              {product.name}
+            </h1>
+
+            {/* Pricing Display: Prominent & Refined (30-34px) with subtle strikethrough */}
+            <div className="flex items-baseline gap-2.5 pt-0.5 flex-wrap">
+              <span className="font-serif text-2xl sm:text-3xl lg:text-[32px] font-medium text-brand-dark tracking-tight leading-none">
+                {formatPrice(pricing.activePrice)}
+              </span>
+              {pricing.oldPrice && (
+                <span className="text-xs sm:text-sm text-brand-muted/60 line-through font-sans">
+                  {formatPrice(pricing.oldPrice)}
+                </span>
+              )}
+              {pricing.discountPercent && (
+                <span className="text-[9px] uppercase tracking-wider font-semibold text-brand-accent border border-brand-accent/40 px-2 py-0.5 rounded-xs">
+                  Save {pricing.discountPercent}%
+                </span>
+              )}
+            </div>
+
+            {/* Stock Status Indicator: Quiet, Refined Pill Badge */}
+            <div>
+              {product.stock <= 0 ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.14em] font-medium text-red-700 bg-red-50/70 border border-red-200/80 rounded-full">
+                  Currently Out of Stock
+                </span>
+              ) : product.stock < 5 ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.14em] font-medium text-brand-accent bg-brand-bg border border-brand-accent/30 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse" />
+                  Limited stock &bull; {product.stock} remaining
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.14em] font-medium text-emerald-800 bg-emerald-50/50 border border-emerald-200/80 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                  In Stock &bull; Ready for Dharan Dispatch
+                </span>
+              )}
+            </div>
+
+            {/* Concise Product Introduction (2–4 lines) */}
+            <div className="pt-2 text-xs sm:text-[13px] text-brand-muted leading-relaxed border-t border-brand-border/60">
+              <p>{summary}</p>
+            </div>
+
+            {/* Attribute Badges / Spec Chips */}
+            {productSpecs.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {productSpecs.map((spec, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] uppercase tracking-wider text-brand-dark bg-brand-bg/70 border border-brand-border/70 rounded-xs font-mono"
+                  >
+                    <span className="text-brand-muted">{spec.label}:</span>
+                    <strong className="font-sans font-medium text-brand-dark">{spec.value}</strong>
                   </span>
-                )}
-                {pricing.discountPercent && (
-                  <span className="text-[9px] uppercase tracking-wider font-medium text-brand-accent border border-brand-accent/40 px-2 py-0.5">
-                    Save {pricing.discountPercent}%
-                  </span>
-                )}
+                ))}
               </div>
+            )}
 
-              {/* Stock Status Indicator: Quiet, Refined Pill Badge */}
-              <div>
-                {product.stock <= 0 ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.14em] font-medium text-red-700 bg-red-50/70 border border-red-200/80 rounded-full">
-                    Currently Out of Stock
-                  </span>
-                ) : product.stock < 5 ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.14em] font-medium text-brand-accent bg-brand-bg border border-brand-accent/30 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse" />
-                    Limited stock &bull; {product.stock} remaining
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.14em] font-medium text-emerald-800 bg-emerald-50/50 border border-emerald-200/80 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                    In Stock &bull; Ready for Dharan Dispatch
-                  </span>
-                )}
-              </div>
-
-              {/* Concise Product Introduction (2–4 lines) */}
-              <div className="pt-2 text-xs sm:text-[13px] text-brand-muted leading-relaxed border-t border-brand-border/60">
-                <p className="line-clamp-3">{summary}</p>
-              </div>
-
-              {/* Purchasing Controls: Quantity + Primary Add to Cart */}
-              {product.stock > 0 && (
-                <div className="pt-3 border-t border-brand-border/60 space-y-3">
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    {/* Compact Quantity Selector (120-130px × 44-46px) */}
-                    <div className="w-full sm:w-[124px] h-[46px] border border-brand-border bg-brand-surface rounded-xs inline-flex items-center justify-between shrink-0">
-                      <button
-                        type="button"
-                        onClick={handleDecrement}
-                        disabled={quantity <= 1}
-                        className="w-9 h-full flex items-center justify-center text-brand-dark hover:bg-brand-bg transition-colors disabled:opacity-30 cursor-pointer"
-                        aria-label="Decrease quantity"
-                      >
-                        &minus;
-                      </button>
-                      <span className="w-8 text-center text-xs font-semibold text-brand-dark font-mono">
-                        {quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleIncrement}
-                        disabled={quantity >= product.stock}
-                        className="w-9 h-full flex items-center justify-center text-brand-dark hover:bg-brand-bg transition-colors disabled:opacity-30 cursor-pointer"
-                        aria-label="Increase quantity"
-                      >
-                        &#43;
-                      </button>
-                    </div>
-
-                    {/* Primary Add to Shopping Bag Action */}
-                    <Button
-                      onClick={handleAddToCart}
-                      variant="primary"
-                      size="md"
-                      className="flex-1 h-[46px] py-0 tracking-[0.16em] uppercase text-xs font-medium"
-                    >
-                      <ShoppingBag className="w-4 h-4 mr-2 shrink-0" />
-                      <span>Add to Shopping Bag</span>
-                    </Button>
-
-                    {/* Wishlist Toggle Button */}
+            {/* Purchasing Controls: Quantity + Primary Add to Cart */}
+            {product.stock > 0 && (
+              <div className="pt-2 border-t border-brand-border/60 space-y-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  {/* Compact Quantity Selector (120-130px × 44-46px) */}
+                  <div className="w-full sm:w-[124px] h-[46px] border border-brand-border bg-brand-surface rounded-xs inline-flex items-center justify-between shrink-0">
                     <button
                       type="button"
-                      onClick={handleWishlistToggle}
-                      className={`w-[46px] h-[46px] border flex items-center justify-center transition-colors cursor-pointer shrink-0 rounded-xs ${
-                        wishlisted
-                          ? 'bg-brand-dark border-brand-dark text-brand-surface'
-                          : 'border-brand-border bg-brand-surface text-brand-dark hover:border-brand-accent'
-                      }`}
-                      aria-label={wishlisted ? 'Remove from wishlist' : 'Save to wishlist'}
+                      onClick={handleDecrement}
+                      disabled={quantity <= 1}
+                      className="w-9 h-full flex items-center justify-center text-brand-dark hover:bg-brand-bg transition-colors disabled:opacity-30 cursor-pointer"
+                      aria-label="Decrease quantity"
                     >
-                      <Heart className={`w-4 h-4 ${wishlisted ? 'fill-current' : ''}`} />
+                      &minus;
+                    </button>
+                    <span className="w-8 text-center text-xs font-semibold text-brand-dark font-mono">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleIncrement}
+                      disabled={quantity >= product.stock}
+                      className="w-9 h-full flex items-center justify-center text-brand-dark hover:bg-brand-bg transition-colors disabled:opacity-30 cursor-pointer"
+                      aria-label="Increase quantity"
+                    >
+                      &#43;
                     </button>
                   </div>
-                </div>
-              )}
 
-              {/* Factual Delivery Information: Subtle Supporting Row */}
-              <div className="flex items-center gap-2 text-[11px] sm:text-xs text-brand-muted pt-3 border-t border-brand-border/50">
+                  {/* Primary Add to Shopping Bag Action */}
+                  <Button
+                    onClick={handleAddToCart}
+                    variant="primary"
+                    size="md"
+                    className="flex-1 h-[46px] py-0 tracking-[0.16em] uppercase text-xs font-medium"
+                  >
+                    <ShoppingBag className="w-4 h-4 mr-2 shrink-0" />
+                    <span>Add to Shopping Bag</span>
+                  </Button>
+
+                  {/* Wishlist Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={handleWishlistToggle}
+                    className={`w-[46px] h-[46px] border flex items-center justify-center transition-colors cursor-pointer shrink-0 rounded-xs ${
+                      wishlisted
+                        ? 'bg-brand-dark border-brand-dark text-brand-surface'
+                        : 'border-brand-border bg-brand-surface text-brand-dark hover:border-brand-accent'
+                    }`}
+                    aria-label={wishlisted ? 'Remove from wishlist' : 'Save to wishlist'}
+                  >
+                    <Heart className={`w-4 h-4 ${wishlisted ? 'fill-current' : ''}`} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Factual Delivery & Trust Pillars */}
+            <div className="pt-2 border-t border-brand-border/50 space-y-2.5">
+              <div className="flex items-center gap-2 text-[11px] sm:text-xs text-brand-muted">
                 <MapPin className="w-3.5 h-3.5 text-brand-accent shrink-0" />
-                <span>Dharan Delivery &bull; Flat Rs. 100 &bull; Cash on Delivery</span>
+                <span>Dharan Delivery &bull; Flat Rs. 100 &bull; Cash on Delivery Available</span>
+              </div>
+
+              {/* Clean Luxury Guarantee Strip */}
+              <div className="grid grid-cols-3 gap-2 pt-0.5">
+                <div className="flex items-center gap-1.5 p-2 bg-brand-bg/50 border border-brand-border/60 text-[10px] text-brand-muted rounded-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+                  <span className="truncate">100% Genuine</span>
+                </div>
+                <div className="flex items-center gap-1.5 p-2 bg-brand-bg/50 border border-brand-border/60 text-[10px] text-brand-muted rounded-xs">
+                  <MapPin className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+                  <span className="truncate">Dharan Dispatch</span>
+                </div>
+                <div className="flex items-center gap-1.5 p-2 bg-brand-bg/50 border border-brand-border/60 text-[10px] text-brand-muted rounded-xs">
+                  <RotateCcw className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+                  <span className="truncate">Pay on Delivery</span>
+                </div>
               </div>
             </div>
 
             {/* Detailed Product Information: Clean Structured Accordions */}
             {accordions.length > 0 && (
-              <div className="mt-6 pt-2 border-t border-brand-border/60">
+              <div className="pt-2 border-t border-brand-border/60">
                 {accordions.map((sec) => {
                   const isOpen = openAccordion === sec.id;
                   return (
@@ -528,7 +588,7 @@ export default function ProductDetails() {
                         </span>
                       </button>
                       {isOpen && (
-                        <div className="pb-3.5 text-xs text-brand-muted leading-relaxed whitespace-pre-line animate-fadeIn">
+                        <div className="pb-3 text-xs text-brand-muted leading-relaxed whitespace-pre-line animate-fadeIn">
                           {sec.content}
                         </div>
                       )}
