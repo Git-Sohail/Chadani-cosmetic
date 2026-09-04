@@ -20,7 +20,7 @@ export function ChatProvider({ children }) {
   const [sending, setSending] = useState(false);
   const [widgetOpen, setWidgetOpen] = useState(false);
   const socketRef = useRef(null);
-  const [socket, setSocket] = useState(null);
+  const [socketInstance, setSocketInstance] = useState(null);
   const activeConvRef = useRef(null); // keep latest value accessible inside socket handlers
 
   const openChatWidget = useCallback(() => setWidgetOpen(true), []);
@@ -63,7 +63,7 @@ export function ChatProvider({ children }) {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
-        setSocket(null);
+        setSocketInstance(null);
       }
       setConversations([]);
       setActiveConversation(null);
@@ -73,16 +73,16 @@ export function ChatProvider({ children }) {
     }
 
     // Connect
-    const newSocket = socketIO(SOCKET_URL, {
+    const socket = socketIO(SOCKET_URL, {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
       reconnectionDelay: 1500,
     });
-    socketRef.current = newSocket;
-    setSocket(newSocket);
+    socketRef.current = socket;
+    setSocketInstance(socket);
 
-    newSocket.on('connect', () => {
+    socket.on('connect', () => {
       // Join admin room so inbox updates in real-time
       if (isAdmin) socket.emit('join_admin');
 
@@ -154,6 +154,7 @@ export function ChatProvider({ children }) {
     return () => {
       socket.disconnect();
       socketRef.current = null;
+      setSocketInstance(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user?.id, isAdmin]);
@@ -357,7 +358,7 @@ export function ChatProvider({ children }) {
         startPolling,
         stopPolling,
         setActiveConversation,
-        socket,
+        socket: socketInstance,
         widgetOpen,
         openChatWidget,
         closeChatWidget,
