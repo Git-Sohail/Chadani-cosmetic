@@ -22,6 +22,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
   // ── Resend (production) ───────────────────────────────────────────────────
   if (resend) {
     try {
+      console.log(`[Resend] Attempting to send email to: ${to}`);
       const { data, error } = await resend.emails.send({
         from: FROM_ADDRESS,
         to,
@@ -31,10 +32,10 @@ const sendEmail = async ({ to, subject, html, text }) => {
       });
 
       if (error) {
-        console.error('[Resend] Send error:', error);
+        console.error('[Resend] Send error (API rejected):', error);
         // Fall through to console fallback
       } else {
-        console.log(`[Resend] Email sent: ${data?.id}`);
+        console.log(`[Resend] Email successfully accepted for delivery: ${data?.id} (Recipient: ${to})`);
         return { success: true, messageId: data?.id };
       }
     } catch (err) {

@@ -126,6 +126,24 @@ const placeOrder = async (req, res) => {
       console.error('Failed to send order confirmation email:', err);
     });
 
+    // Notify admins via database Notification model
+    const admins = await prisma.user.findMany({
+      where: { role: 'admin' },
+      select: { id: true }
+    });
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          orderId: orderDetails.id,
+          type: 'admin_new_order',
+          title: 'New Order',
+          message: `Order #${orderDetails.id.slice(0, 8)} placed by ${orderDetails.customerName}.`,
+          read: false
+        }))
+      });
+    }
+
     // Notify admin in real-time via Socket.IO
     const { getIo } = require('../socket');
     const io = getIo();
@@ -299,7 +317,14 @@ const updateOrderStatus = async (req, res) => {
     const notifyUserId = await resolveNotifyUserId(order);
     if (notifyUserId) {
       try {
-        await createOrderStatusNotification(notifyUserId, order.id, status);
+        const notification = await createOrderStatusNotification(notifyUserId, order.id, status);
+        if (notification) {
+          const { getIo } = require('../socket');
+          const io = getIo();
+          if (io) {
+            io.to(`user:${notifyUserId}`).emit('new_notification', notification);
+          }
+        }
       } catch (err) {
         console.error('Failed to create in-app notification:', err);
       }
@@ -307,9 +332,23 @@ const updateOrderStatus = async (req, res) => {
 
     const targetEmail = order.customerEmail || order.user?.email;
     if (targetEmail) {
-      sendOrderStatusUpdateEmail(order, targetEmail).catch((err) => {
-        console.error('Failed to send status update email:', err);
+      console.log('[Order Status Email]', {
+        orderId: order.id,
+        status: newStatus,
+        recipient: targetEmail
       });
+      try {
+        await sendOrderStatusUpdateEmail(order, targetEmail);
+      } catch (err) {
+        console.error('[Order Status Email] failed', {
+          orderId: order.id,
+          status: newStatus,
+          recipient: targetEmail,
+          message: err.message
+        });
+      }
+    } else {
+      console.warn('[Order Status Email] Missing targetEmail for order', order.id);
     }
 
     res.json(formatOrder(order));
@@ -319,16 +358,10 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-// In-memory store for new order count per admin session (resets when admin visits orders page)
-// This is per-process — good enough for single-instance free tier
-const newOrderCounts = new Map(); // socket room tracking is the primary mechanism
-
 const getNewOrderCount = async (req, res) => {
   try {
-    // Count orders placed in the last 24 hours that are still pending
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const count = await prisma.order.count({
-      where: { orderStatus: 'pending', createdAt: { gte: since } },
+    const count = await prisma.notification.count({
+      where: { userId: req.user.id, type: 'admin_new_order', read: false },
     });
     res.json({ count });
   } catch (error) {
@@ -338,8 +371,16 @@ const getNewOrderCount = async (req, res) => {
 };
 
 const resetNewOrderCount = async (req, res) => {
-  // No server state to reset — client handles its own badge
-  res.json({ ok: true });
+  try {
+    await prisma.notification.updateMany({
+      where: { userId: req.user.id, type: 'admin_new_order', read: false },
+      data: { read: true },
+    });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Reset new order count error:', error);
+    res.status(500).json({ error: 'Server error.' });
+  }
 };
 
 // Admin — permanently delete an order and its items

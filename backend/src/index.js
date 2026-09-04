@@ -45,7 +45,10 @@ setIo(io);
 io.on('connection', (socket) => {
   // Client sends { userId, conversationId } after connecting
   socket.on('join', ({ userId, conversationId }) => {
-    if (userId) socket.data.userId = userId;
+    if (userId) {
+      socket.data.userId = userId;
+      socket.join(`user:${userId}`); // Join user-specific room for notifications
+    }
     if (conversationId) {
       socket.join(`conv:${conversationId}`);
       socket.data.conversationId = conversationId;

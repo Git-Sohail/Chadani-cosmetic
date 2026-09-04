@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import axios from 'axios';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -37,11 +38,12 @@ function breadcrumbLabel(pathname) {
 }
 
 export default function AdminLayout({ children }) {
-  const { user, logout, loading: authLoading } = useAuth();
-  const { unreadCount: chatUnread, fetchUnreadCount } = useChat();
+  const { user, token, API_URL, logout, loading: authLoading } = useAuth();
+  const { unreadCount: chatUnread, fetchUnreadCount, socket } = useChat();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [orderUnreadCount, setOrderUnreadCount] = useState(0);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -63,6 +65,37 @@ export default function AdminLayout({ children }) {
       fetchUnreadCount();
     }
   }, [user?.role, fetchUnreadCount]);
+
+  // Fetch initial unread order count
+  useEffect(() => {
+    if (user?.role === 'admin' && token) {
+      axios.get(`${API_URL}/orders/new-count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => setOrderUnreadCount(res.data.count || 0))
+        .catch(err => console.error('Failed to fetch new order count:', err));
+    }
+  }, [user?.role, token, API_URL]);
+
+  // Listen to new_order socket event
+  useEffect(() => {
+    if (!socket || user?.role !== 'admin') return;
+    const handleNewOrder = () => {
+      setOrderUnreadCount((prev) => prev + 1);
+    };
+    socket.on('new_order', handleNewOrder);
+    return () => socket.off('new_order', handleNewOrder);
+  }, [socket, user?.role]);
+
+  // Clear unread order count when visiting orders section
+  useEffect(() => {
+    if (pathname.startsWith('/admin/orders') && orderUnreadCount > 0) {
+      setOrderUnreadCount(0);
+      axios.post(`${API_URL}/orders/new-count/reset`, null, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(err => console.error('Failed to reset new order count:', err));
+    }
+  }, [pathname, orderUnreadCount, API_URL, token]);
 
   const handleLogout = () => {
     if (typeof window !== 'undefined' && window.confirm('Are you sure you want to exit the administration suite?')) {
@@ -100,6 +133,7 @@ export default function AdminLayout({ children }) {
         <SidebarContent
           pathname={pathname}
           chatUnread={chatUnread}
+          orderUnreadCount={orderUnreadCount}
           user={user}
           handleLogout={handleLogout}
         />
@@ -123,6 +157,7 @@ export default function AdminLayout({ children }) {
         <SidebarContent
           pathname={pathname}
           chatUnread={chatUnread}
+          orderUnreadCount={orderUnreadCount}
           user={user}
           handleLogout={handleLogout}
         />
@@ -182,7 +217,7 @@ export default function AdminLayout({ children }) {
   );
 }
 
-function SidebarContent({ pathname, chatUnread, user, handleLogout }) {
+function SidebarContent({ pathname, chatUnread, orderUnreadCount, user, handleLogout }) {
   return (
     <div className="flex flex-col h-full justify-between">
       <div className="p-6 space-y-6">
@@ -216,6 +251,14 @@ function SidebarContent({ pathname, chatUnread, user, handleLogout }) {
                     aria-label={`${chatUnread} unread messages`}
                   >
                     {chatUnread > 9 ? '9+' : chatUnread}
+                  </span>
+                )}
+                {item.href === '/admin/orders' && orderUnreadCount > 0 && (
+                  <span
+                    className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-brand-accent text-brand-surface text-[9px] font-bold flex items-center justify-center font-mono"
+                    aria-label={`${orderUnreadCount} unread orders`}
+                  >
+                    {orderUnreadCount > 9 ? '9+' : orderUnreadCount}
                   </span>
                 )}
               </Link>

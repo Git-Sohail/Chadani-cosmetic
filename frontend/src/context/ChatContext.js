@@ -20,6 +20,7 @@ export function ChatProvider({ children }) {
   const [sending, setSending] = useState(false);
   const [widgetOpen, setWidgetOpen] = useState(false);
   const socketRef = useRef(null);
+  const [socket, setSocket] = useState(null);
   const activeConvRef = useRef(null); // keep latest value accessible inside socket handlers
 
   const openChatWidget = useCallback(() => setWidgetOpen(true), []);
@@ -62,6 +63,7 @@ export function ChatProvider({ children }) {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
+        setSocket(null);
       }
       setConversations([]);
       setActiveConversation(null);
@@ -71,15 +73,16 @@ export function ChatProvider({ children }) {
     }
 
     // Connect
-    const socket = socketIO(SOCKET_URL, {
+    const newSocket = socketIO(SOCKET_URL, {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
       reconnectionDelay: 1500,
     });
-    socketRef.current = socket;
+    socketRef.current = newSocket;
+    setSocket(newSocket);
 
-    socket.on('connect', () => {
+    newSocket.on('connect', () => {
       // Join admin room so inbox updates in real-time
       if (isAdmin) socket.emit('join_admin');
 
@@ -354,6 +357,7 @@ export function ChatProvider({ children }) {
         startPolling,
         stopPolling,
         setActiveConversation,
+        socket,
         widgetOpen,
         openChatWidget,
         closeChatWidget,

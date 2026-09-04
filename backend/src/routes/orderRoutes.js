@@ -7,6 +7,7 @@ const {
   getOrderDetails,
   updateOrderStatus,
   getNewOrderCount,
+  resetNewOrderCount,
   deleteOrder,
   cancelMyOrder,
 } = require('../controllers/orderController');
@@ -19,6 +20,7 @@ router.use(authenticateUser);
 router.post('/', placeOrder);
 router.get('/my-orders', getMyOrders);
 router.get('/new-count', isAdmin, getNewOrderCount);
+router.post('/new-count/reset', isAdmin, resetNewOrderCount);
 router.get('/', isAdmin, getAllOrders);
 router.get('/:id', getOrderDetails);
 router.put('/:id/cancel', cancelMyOrder);

@@ -382,6 +382,7 @@ export default function Navbar() {
 
               {/* Mobile Right Controls */}
               <div className="flex items-center lg:hidden gap-1 shrink-0">
+                {isLoggedIn && userRole !== 'admin' && <NotificationBell />}
                 <button
                   type="button"
                   onClick={() => setIsOpen(true)}

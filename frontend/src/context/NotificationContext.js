@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
+import { useChat } from './ChatContext';
 import { logApiIssue } from '../utils/api';
 
 const NotificationContext = createContext();
@@ -42,6 +43,20 @@ export function NotificationProvider({ children }) {
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [token, user?.role, fetchNotifications]);
+
+  const { socket } = useChat();
+
+  useEffect(() => {
+    if (!socket || user?.role === 'admin') return;
+
+    const handleNewNotification = (notification) => {
+      setNotifications((prev) => [notification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
+    };
+
+    socket.on('new_notification', handleNewNotification);
+    return () => socket.off('new_notification', handleNewNotification);
+  }, [socket, user?.role]);
 
   const markAsRead = async (id) => {
     if (!token) return;

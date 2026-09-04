@@ -104,27 +104,43 @@ export default function NotificationBell() {
         <div
           role="region"
           aria-label="Notifications menu"
-          className="absolute right-0 mt-2 w-[min(100vw-2rem,22rem)] bg-brand-surface border border-brand-border shadow-xl z-[100] overflow-hidden animate-fadeIn"
+          className="
+            fixed inset-0 z-[100] bg-brand-surface flex flex-col animate-fadeIn
+            sm:absolute sm:inset-auto sm:right-0 sm:mt-2 sm:w-[22rem] sm:border sm:border-brand-border sm:shadow-xl sm:block sm:h-auto
+          "
+          style={{ height: '100dvh' }} // ensure mobile full height
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border/60 bg-brand-bg/40">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border/60 bg-brand-bg/40 sticky top-0 shrink-0">
             <span className="text-[10px] font-medium uppercase tracking-wider text-brand-dark">
-              Notifications
+              Notifications {unreadCount > 0 && `(${unreadCount})`}
             </span>
-            {unreadCount > 0 && (
+            <div className="flex items-center gap-4">
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={markAllAsRead}
+                  className="text-[9px] font-medium text-brand-accent hover:text-brand-dark uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Mark all read</span>
+                  <span className="sm:hidden">Read all</span>
+                </button>
+              )}
+              {/* Mobile Close Button */}
               <button
                 type="button"
-                onClick={markAllAsRead}
-                className="text-[9px] font-medium text-brand-accent hover:text-brand-dark uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                onClick={() => setOpen(false)}
+                className="sm:hidden text-brand-muted hover:text-brand-dark cursor-pointer"
+                aria-label="Close notifications"
               >
-                <CheckCheck className="w-3.5 h-3.5" />
-                <span>Mark all read</span>
+                <span className="text-xl leading-none">&times;</span>
               </button>
-            )}
+            </div>
           </div>
 
           {/* List */}
-          <div className="max-h-80 overflow-y-auto divide-y divide-brand-border/40">
+          <div className="flex-1 sm:max-h-80 overflow-y-auto divide-y divide-brand-border/40 overscroll-contain">
             {loading && notifications.length === 0 ? (
               <div className="py-10 flex justify-center text-brand-muted">
                 <Loader2 className="w-5 h-5 animate-spin text-brand-accent" />
@@ -168,7 +184,7 @@ export default function NotificationBell() {
           </div>
 
           {/* Footer */}
-          <div className="p-3 border-t border-brand-border/60 bg-brand-bg/40">
+          <div className="p-3 border-t border-brand-border/60 bg-brand-bg/40 shrink-0">
             <Link
               href="/account/orders"
               onClick={() => setOpen(false)}
