@@ -344,6 +344,7 @@ export function ChatProvider({ children }) {
     }
   }, [API_URL, token, activeConversation?.id, authHeaders, isAdmin, fetchConversations]);
 
+  // Kept for backwards-compat (pages call startPolling/stopPolling) — now no-ops
   // Fallback polling: polls every 4s when the customer has chat widget open or admin has active conversation, ensuring messages always arrive even if socket drops
   useEffect(() => {
     if (!token || !user) return;

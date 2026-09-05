@@ -8,13 +8,22 @@ import { ArrowUpRight } from 'lucide-react';
 export default function CategoryShowcase({ categories = [] }) {
   if (!categories || categories.length === 0) return null;
 
+  // Prioritize Bangles as the primary business category
+  const sortedCategories = [...categories].sort((a, b) => {
+    const aIsBangle = /bangle/i.test(a.name);
+    const bIsBangle = /bangle/i.test(b.name);
+    if (aIsBangle && !bIsBangle) return -1;
+    if (!aIsBangle && bIsBangle) return 1;
+    return 0;
+  });
+
   return (
-    <section id="collections" className="py-16 sm:py-20 lg:py-24 bg-brand-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="collections" className="py-14 sm:py-18 lg:py-20 bg-brand-bg">
+      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 sm:mb-12 border-b border-brand-border/60 pb-5">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10 border-b border-brand-border/60 pb-4">
           <div>
-            <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-brand-accent block mb-2">
+            <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-brand-accent block mb-1.5">
               Curated Departments
             </span>
             <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-brand-dark font-normal tracking-tight">
@@ -31,8 +40,8 @@ export default function CategoryShowcase({ categories = [] }) {
         </div>
 
         {/* Category Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {categories.map((category) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {sortedCategories.map((category) => (
             <Link
               key={category.id}
               href={`/shop?category=${category.id}`}

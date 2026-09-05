@@ -1,51 +1,45 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, MapPin, Banknote, MessageCircle } from 'lucide-react';
+import { Sparkles, Heart, Truck, Store } from 'lucide-react';
 
-const FEATURES = [
+const TRUST_ITEMS = [
   {
     icon: Sparkles,
-    title: 'Verified Authentic',
-    desc: '100% genuine cosmetics & jewelry curated with care',
+    label: 'Bangles for Every Occasion',
   },
   {
-    icon: MapPin,
-    title: 'Dharan Local Delivery',
-    desc: 'Doorstep delivery across all wards (Flat Rs. 100)',
+    icon: Heart,
+    label: 'Beauty & Skincare',
   },
   {
-    icon: Banknote,
-    title: 'Cash on Delivery',
-    desc: 'Convenient and secure payment at your doorstep',
+    icon: Truck,
+    label: 'Dharan Delivery · Flat Rs. 100',
   },
   {
-    icon: MessageCircle,
-    title: 'Real-Time Support',
-    desc: 'Direct consultation through our in-app chat',
+    icon: Store,
+    label: 'Family-Owned in Dharan',
   },
 ];
 
 export default function FeatureBar() {
   return (
-    <section className="bg-brand-surface border-b border-brand-border/60 py-8 sm:py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-          {FEATURES.map((item) => {
+    <section className="bg-brand-surface border-y border-brand-border/70 py-3 sm:py-3.5">
+      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 items-center">
+          {TRUST_ITEMS.map((item, index) => {
             const Icon = item.icon;
             return (
-              <div key={item.title} className="flex items-start gap-4">
-                <div className="w-10 h-10 shrink-0 rounded border border-brand-border flex items-center justify-center bg-brand-bg text-brand-dark">
-                  <Icon className="w-4 h-4 text-brand-accent" strokeWidth={1.5} />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="font-serif text-sm sm:text-base text-brand-dark font-medium tracking-tight">
-                    {item.title}
-                  </h3>
-                  <p className="text-xs text-brand-muted leading-relaxed font-light">
-                    {item.desc}
-                  </p>
-                </div>
+              <div
+                key={item.label}
+                className={`flex items-center justify-center sm:justify-start lg:justify-center gap-2 text-center sm:text-left ${
+                  index !== TRUST_ITEMS.length - 1 ? 'md:border-r md:border-brand-border/60' : ''
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5 text-brand-accent shrink-0" strokeWidth={1.75} />
+                <span className="text-[11px] sm:text-xs font-medium text-brand-dark tracking-wide">
+                  {item.label}
+                </span>
               </div>
             );
           })}

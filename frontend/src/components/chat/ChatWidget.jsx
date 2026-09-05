@@ -85,6 +85,7 @@ export default function ChatWidget() {
     };
   }, [selectedMedia]);
 
+  if (!user || user.role !== 'customer') return null;
   if (!user || user.role !== 'customer') {
     if (!widgetOpen) return null;
     return (

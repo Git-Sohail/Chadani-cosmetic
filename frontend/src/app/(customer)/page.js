@@ -49,7 +49,7 @@ export default function Home() {
 
   return (
     <div className="overflow-x-hidden bg-brand-bg">
-      <LuxuryHero />
+      <LuxuryHero categories={categories} />
       <FeatureBar />
 
       {loading ? (

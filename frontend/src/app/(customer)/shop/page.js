@@ -99,7 +99,14 @@ export function ShopContent() {
 
     // Category filter
     if (selectedCategory !== 'all') {
-      result = result.filter((p) => p.categoryId === selectedCategory);
+      result = result.filter((p) => {
+        if (p.categoryId === selectedCategory) return true;
+        const catName = p.category?.name?.toLowerCase() || '';
+        const sel = selectedCategory.toLowerCase();
+        if (catName === sel) return true;
+        if (sel === 'bangles' && catName.includes('bangle')) return true;
+        return false;
+      });
     }
 
     // Price filter
@@ -309,21 +316,28 @@ export function ShopContent() {
                   {selectedCategory === 'all' && <Check className="w-3.5 h-3.5" />}
                 </button>
 
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`text-left px-3 py-2 text-xs font-medium rounded transition-colors flex items-center justify-between cursor-pointer ${
-                      selectedCategory === cat.id
-                        ? 'bg-brand-dark text-brand-surface'
-                        : 'text-brand-text hover:bg-brand-bg'
-                    }`}
-                  >
-                    <span>{cat.name}</span>
-                    {selectedCategory === cat.id && <Check className="w-3.5 h-3.5" />}
-                  </button>
-                ))}
+                {categories.map((cat) => {
+                  const isSelected =
+                    selectedCategory === cat.id ||
+                    (typeof selectedCategory === 'string' &&
+                      (selectedCategory.toLowerCase() === cat.name.toLowerCase() ||
+                        (selectedCategory.toLowerCase() === 'bangles' && /bangle/i.test(cat.name))));
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`text-left px-3 py-2 text-xs font-medium rounded transition-colors flex items-center justify-between cursor-pointer ${
+                        isSelected
+                          ? 'bg-brand-dark text-brand-surface'
+                          : 'text-brand-text hover:bg-brand-bg'
+                      }`}
+                    >
+                      <span>{cat.name}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
