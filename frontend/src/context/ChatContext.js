@@ -8,7 +8,18 @@ import { logApiIssue } from '../utils/api';
 
 const ChatContext = createContext();
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
+function getSocketUrl(apiUrl) {
+  if (process.env.NEXT_PUBLIC_SOCKET_URL) {
+    return process.env.NEXT_PUBLIC_SOCKET_URL;
+  }
+  if (apiUrl && typeof apiUrl === 'string') {
+    return apiUrl.replace(/\/api\/?$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return window.location.origin;
+  }
+  return 'http://localhost:5000';
+}
 
 export function ChatProvider({ children }) {
   const { user, token, API_URL } = useAuth();
@@ -19,6 +30,7 @@ export function ChatProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [widgetOpen, setWidgetOpen] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(false);
   const socketRef = useRef(null);
   const [socketInstance, setSocketInstance] = useState(null);
   const activeConvRef = useRef(null); // keep latest value accessible inside socket handlers
@@ -64,6 +76,7 @@ export function ChatProvider({ children }) {
         socketRef.current.disconnect();
         socketRef.current = null;
         setSocketInstance(null);
+        setSocketConnected(false);
       }
       setConversations([]);
       setActiveConversation(null);
@@ -72,17 +85,22 @@ export function ChatProvider({ children }) {
       return;
     }
 
+    const targetSocketUrl = getSocketUrl(API_URL);
+
     // Connect
-    const socket = socketIO(SOCKET_URL, {
+    const socket = socketIO(targetSocketUrl, {
       auth: { token },
       transports: ['websocket', 'polling'],
-      reconnectionAttempts: 10,
+      reconnectionAttempts: 20,
       reconnectionDelay: 1500,
+      timeout: 10000,
     });
     socketRef.current = socket;
     setSocketInstance(socket);
 
     socket.on('connect', () => {
+      setSocketConnected(true);
+
       // Join admin room so inbox updates in real-time
       if (isAdmin) socket.emit('join_admin');
 
@@ -95,19 +113,41 @@ export function ChatProvider({ children }) {
       }
     });
 
+    socket.on('disconnect', () => {
+      setSocketConnected(false);
+    });
+
+    socket.on('connect_error', (err) => {
+      setSocketConnected(false);
+      console.warn('[socket] Connection fallback active:', err?.message || err);
+    });
+
     // New message arrives — append if it belongs to the active conversation
     socket.on('new_message', (message) => {
       const conv = activeConvRef.current;
-      if (conv?.id === message.conversationId) {
+      const belongsToActive =
+        conv?.id === message.conversationId ||
+        (isCustomer && (!conv?.id || conv?.id === message.conversationId));
+
+      if (belongsToActive) {
+        if (!conv?.id && message.conversationId) {
+          setActiveConversation({ id: message.conversationId, customerId: user.id });
+        }
         setMessages((prev) => {
           // Deduplicate by id
           if (prev.some((m) => m.id === message.id)) return prev;
           return [...prev, message];
         });
-        // If the message is from the other side, keep unread count at 0
-        // (the widget/page is open so user sees it instantly)
+        // If message is from customer in admin active chat, mark read
+        if (isAdmin && activeConvRef.current?.id === message.conversationId) {
+          axios
+            .patch(`${API_URL}/chat/conversations/${message.conversationId}/read`, null, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            .catch(() => {});
+        }
       } else {
-        // Not in this conversation — bump unread badge
+        // Not currently in this conversation — bump unread badge
         setUnreadCount((prev) => prev + 1);
       }
 
@@ -155,9 +195,10 @@ export function ChatProvider({ children }) {
       socket.disconnect();
       socketRef.current = null;
       setSocketInstance(null);
+      setSocketConnected(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, user?.id, isAdmin]);
+  }, [token, user?.id, isAdmin, API_URL]);
 
   // When the active conversation changes, join that socket room
   useEffect(() => {
@@ -303,7 +344,58 @@ export function ChatProvider({ children }) {
     }
   }, [API_URL, token, activeConversation?.id, authHeaders, isAdmin, fetchConversations]);
 
-  // Kept for backwards-compat (pages call startPolling/stopPolling) — now no-ops
+  // Fallback polling: polls every 4s when the customer has chat widget open or admin has active conversation, ensuring messages always arrive even if socket drops
+  useEffect(() => {
+    if (!token || !user) return;
+    let timer = null;
+
+    const poll = async () => {
+      if (isCustomer && widgetOpen) {
+        try {
+          const res = await axios.get(`${API_URL}/chat/me`, authHeaders());
+          if (res.data?.conversation) {
+            setActiveConversation((prev) => prev || res.data.conversation);
+            setMessages((prev) => {
+              const incoming = res.data.messages || [];
+              if (incoming.length !== prev.length || incoming[incoming.length - 1]?.id !== prev[prev.length - 1]?.id) {
+                return incoming;
+              }
+              return prev;
+            });
+            setUnreadCount(res.data.unreadCount ?? 0);
+          }
+        } catch {
+          // ignore background poll errors
+        }
+      } else if (isAdmin && activeConversation?.id) {
+        try {
+          const res = await axios.get(`${API_URL}/chat/conversations/${activeConversation.id}`, authHeaders());
+          if (res.data?.messages) {
+            setMessages((prev) => {
+              const incoming = res.data.messages || [];
+              if (incoming.length !== prev.length || incoming[incoming.length - 1]?.id !== prev[prev.length - 1]?.id) {
+                return incoming;
+              }
+              return prev;
+            });
+          }
+        } catch {
+          // ignore background poll errors
+        }
+      }
+    };
+
+    // Run polling timer when widget/conversation is open
+    if ((isCustomer && widgetOpen) || (isAdmin && activeConversation?.id)) {
+      timer = setInterval(poll, 4000);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [token, user, isCustomer, isAdmin, widgetOpen, activeConversation?.id, API_URL, authHeaders]);
+
+  // Kept for backwards-compat (pages call startPolling/stopPolling)
   const startPolling = useCallback(() => {}, []);
   const stopPolling = useCallback(() => {}, []);
 

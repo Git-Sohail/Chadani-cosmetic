@@ -85,7 +85,65 @@ export default function ChatWidget() {
     };
   }, [selectedMedia]);
 
-  if (!user || user.role !== 'customer') return null;
+  if (!user || user.role !== 'customer') {
+    if (!widgetOpen) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-xs">
+        <div className="bg-brand-surface border border-brand-border p-6 max-w-sm w-full shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-brand-accent/10 flex items-center justify-center text-brand-accent">
+                <MessageCircle className="w-4 h-4" />
+              </div>
+              <span className="font-serif text-base text-brand-dark font-medium">Chadani Support</span>
+            </div>
+            <button
+              onClick={closeChatWidget}
+              className="text-brand-muted hover:text-brand-dark transition-colors p-1"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <p className="text-xs text-brand-muted leading-relaxed">
+            {user?.role === 'admin'
+              ? 'You are signed in as an administrator. Manage all customer chats directly in the Admin Messages center.'
+              : 'Sign in to your Chadani account to start a live consultation with our team in Dharan, track orders, or ask product questions.'}
+          </p>
+
+          <div className="flex flex-col gap-2 pt-1">
+            {user?.role === 'admin' ? (
+              <a
+                href="/admin/messages"
+                onClick={closeChatWidget}
+                className="w-full text-center py-2.5 px-4 bg-brand-dark text-brand-surface text-xs font-medium uppercase tracking-[0.14em] hover:bg-brand-accent transition-colors"
+              >
+                Open Admin Messages
+              </a>
+            ) : (
+              <>
+                <a
+                  href="/login?redirect=/"
+                  onClick={closeChatWidget}
+                  className="w-full text-center py-2.5 px-4 bg-brand-dark text-brand-surface text-xs font-medium uppercase tracking-[0.14em] hover:bg-brand-accent transition-colors"
+                >
+                  Sign In to Chat
+                </a>
+                <a
+                  href="/register"
+                  onClick={closeChatWidget}
+                  className="w-full text-center py-2.5 px-4 border border-brand-border text-brand-dark text-xs font-medium uppercase tracking-[0.14em] hover:bg-brand-bg transition-colors"
+                >
+                  Create an Account
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleFileSelect = (e) => {
     setUploadError('');

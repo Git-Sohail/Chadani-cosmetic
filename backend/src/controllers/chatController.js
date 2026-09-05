@@ -247,6 +247,8 @@ const sendMessage = async (req, res) => {
     const senderRole = req.user.role === 'admin' ? 'admin' : 'customer';
     let conversationId = req.params.id;
 
+    let targetCustomerId = null;
+
     if (senderRole === 'customer') {
       let conversation = await prisma.conversation.findUnique({
         where: { customerId: req.user.id },
@@ -258,6 +260,7 @@ const sendMessage = async (req, res) => {
         });
       }
       conversationId = conversation.id;
+      targetCustomerId = req.user.id;
     } else {
       if (!conversationId) {
         return res.status(400).json({ error: 'Conversation id is required.' });
@@ -266,6 +269,7 @@ const sendMessage = async (req, res) => {
       if (!conversation) {
         return res.status(404).json({ error: 'Conversation not found.' });
       }
+      targetCustomerId = conversation.customerId;
     }
 
     const message = await prisma.chatMessage.create({
@@ -289,12 +293,15 @@ const sendMessage = async (req, res) => {
       data: { updatedAt: new Date() },
     });
 
-    // Emit real-time event to everyone in the conversation room
+    // Emit real-time event to everyone in the conversation room, customer direct room, and admin room
     const formatted = formatMessage(message);
     const io = getIo();
     if (io) {
       io.to(`conv:${conversationId}`).emit('new_message', formatted);
-      // Notify admin inbox so unread badge updates without a full page refresh
+      if (targetCustomerId) {
+        io.to(`user:${targetCustomerId}`).emit('new_message', formatted);
+      }
+      io.to('admin_room').emit('new_message', formatted);
       io.to('admin_room').emit('conversation_updated', {
         conversationId,
         lastMessage: formatted,
