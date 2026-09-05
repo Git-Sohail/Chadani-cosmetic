@@ -6,10 +6,10 @@ import Image from 'next/image';
 import { ArrowRight, MapPin, Sparkles, Heart } from 'lucide-react';
 import Button from '../Button';
 
-// Authentic project assets
+// Guaranteed local high-resolution assets from catalog
+const BANGLES_HERO_IMAGE = '/images/bangles-hero.jpg';
+const COSMETICS_HERO_IMAGE = '/images/cosmetics-hero.jpg';
 const OWNERS_PHOTO = '/images/chadani-owners-original.jpg';
-const BANGLES_THUMB = 'https://images.unsplash.com/photo-1617038260897-41a608cfd2c1?auto=format&fit=crop&q=80&w=400';
-const COSMETICS_THUMB = 'https://images.unsplash.com/photo-1586776977607-310e9c725c37?auto=format&fit=crop&q=80&w=400';
 
 export default function LuxuryHero({ categories = [] }) {
   // Resolve actual bangles and cosmetics category links from the database
@@ -20,32 +20,10 @@ export default function LuxuryHero({ categories = [] }) {
   const cosmeticsHref = cosmeticsCat ? `/shop?category=${cosmeticsCat.id}` : '/shop?category=Cosmetics%20%26%20Makeup';
 
   return (
-    <section className="relative bg-brand-bg pt-6 sm:pt-8 lg:pt-10 pb-10 sm:pb-12 lg:pb-14 border-b border-brand-border/40">
+    <section className="relative bg-brand-bg pt-6 sm:pt-8 lg:pt-10 pb-8 sm:pb-10 lg:pb-12 border-b border-brand-border/40">
       <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 items-center">
           
-          {/* ========================================================= */}
-          {/* MOBILE ONLY: Owners Portrait appears first (top of screen) */}
-          {/* ========================================================= */}
-          <div className="block lg:hidden w-full">
-            <div className="bg-brand-surface p-2 sm:p-3 border border-brand-border/80 shadow-xs">
-              <div className="relative w-full aspect-[4/3] overflow-hidden bg-brand-bg">
-                <Image
-                  src={OWNERS_PHOTO}
-                  alt="Owners of Chadani Cosmetic, a family-owned beauty and bangles store in Dharan"
-                  fill
-                  priority
-                  sizes="(max-width: 768px) 100vw, 500px"
-                  className="object-cover object-[center_32%]"
-                />
-              </div>
-              <div className="pt-2 px-1 flex items-center justify-between text-[11px] text-brand-dark">
-                <span className="font-serif italic font-medium">Family-owned in Dharan</span>
-                <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-brand-muted">The Founders</span>
-              </div>
-            </div>
-          </div>
-
           {/* ========================================================= */}
           {/* LEFT COLUMN: Editorial Copy, CTAs, Location & Trust (43%) */}
           {/* ========================================================= */}
@@ -57,7 +35,7 @@ export default function LuxuryHero({ categories = [] }) {
             </div>
 
             {/* Main Heading (H1) */}
-            <h1 className="font-serif text-3xl sm:text-4xl lg:text-[46px] xl:text-[52px] text-brand-dark font-normal leading-[1.08] tracking-tight">
+            <h1 className="font-serif text-3xl sm:text-4xl lg:text-[44px] xl:text-[50px] text-brand-dark font-normal leading-[1.08] tracking-tight">
               Beauty, Bangles &amp; More
             </h1>
 
@@ -106,135 +84,204 @@ export default function LuxuryHero({ categories = [] }) {
               <span>100% Genuine Care</span>
             </div>
 
-            {/* Mobile Category Teaser Cards */}
-            <div className="grid grid-cols-2 gap-2.5 pt-2 lg:hidden">
+            {/* ========================================================= */}
+            {/* MOBILE ONLY: Balanced visual showcase beneath copy         */}
+            {/* ========================================================= */}
+            <div className="block lg:hidden space-y-3 pt-2">
+              {/* Primary Mobile Bangles Feature */}
               <Link
                 href={banglesHref}
-                className="group p-2.5 bg-brand-surface border border-brand-border/80 hover:border-brand-accent transition-all flex flex-col justify-between"
+                className="group relative block aspect-[16/10] w-full overflow-hidden bg-brand-surface border border-brand-border/80 shadow-xs"
               >
-                <div>
-                  <div className="flex items-center gap-1 text-[10px] font-mono tracking-[0.18em] uppercase text-brand-accent mb-0.5">
-                    <Sparkles className="w-2.5 h-2.5" />
-                    <span>Bangles</span>
+                <Image
+                  src={BANGLES_HERO_IMAGE}
+                  alt="Chadani Bangle Collection"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 500px"
+                  className="object-cover transition-transform duration-700 group-hover:scale-103"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/90 via-brand-dark/30 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-4 text-brand-surface flex items-end justify-between">
+                  <div>
+                    <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-brand-accent block mb-0.5">
+                      Primary Department
+                    </span>
+                    <h2 className="font-serif text-xl font-medium text-white">BANGLES</h2>
+                    <p className="text-[11px] text-brand-surface/85">Traditional · Everyday · Trending</p>
                   </div>
-                  <p className="text-xs font-serif font-medium text-brand-dark leading-tight">Everyday · Traditional · Trending</p>
+                  <span className="text-xs font-medium uppercase tracking-[0.14em] text-white group-hover:text-brand-accent flex items-center gap-1 transition-colors">
+                    <span>Explore</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
                 </div>
-                <span className="text-[10px] text-brand-muted group-hover:text-brand-dark font-medium flex items-center gap-1 mt-2">
-                  <span>Explore Collection</span>
-                  <ArrowRight className="w-2.5 h-2.5" />
-                </span>
               </Link>
 
-              <Link
-                href={cosmeticsHref}
-                className="group p-2.5 bg-brand-surface border border-brand-border/80 hover:border-brand-accent transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center gap-1 text-[10px] font-mono tracking-[0.18em] uppercase text-brand-accent mb-0.5">
-                    <Heart className="w-2.5 h-2.5" />
-                    <span>Cosmetics</span>
+              {/* Mobile Secondary Grid: Founders + Cosmetics Duo */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Founders Card */}
+                <div className="bg-brand-surface p-2 border border-brand-border/80 shadow-xs flex flex-col justify-between">
+                  <div className="relative w-full aspect-[4/3] overflow-hidden bg-brand-bg">
+                    <Image
+                      src={OWNERS_PHOTO}
+                      alt="Owners of Chadani Cosmetic, family-owned in Dharan"
+                      fill
+                      sizes="(max-width: 768px) 50vw, 250px"
+                      className="object-cover object-[center_34%]"
+                    />
                   </div>
-                  <p className="text-xs font-serif font-medium text-brand-dark leading-tight">Skincare &amp; Makeup</p>
+                  <div className="pt-1.5 flex items-center justify-between text-[11px] text-brand-dark">
+                    <span className="font-serif italic font-medium">Family-owned in Dharan</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0" />
+                  </div>
                 </div>
-                <span className="text-[10px] text-brand-muted group-hover:text-brand-dark font-medium flex items-center gap-1 mt-2">
-                  <span>Explore Collection</span>
-                  <ArrowRight className="w-2.5 h-2.5" />
-                </span>
-              </Link>
+
+                {/* Cosmetics Card */}
+                <Link
+                  href={cosmeticsHref}
+                  className="group bg-brand-surface p-2 border border-brand-border/80 shadow-xs flex flex-col justify-between"
+                >
+                  <div className="relative w-full aspect-[4/3] overflow-hidden bg-brand-bg">
+                    <Image
+                      src={COSMETICS_HERO_IMAGE}
+                      alt="Cosmetics and beauty products"
+                      fill
+                      sizes="(max-width: 768px) 50vw, 250px"
+                      className="object-cover transition-transform group-hover:scale-104"
+                    />
+                  </div>
+                  <div className="pt-1.5 flex items-center justify-between text-[11px] text-brand-dark">
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-brand-accent">Cosmetics</p>
+                      <p className="font-serif text-xs font-medium text-brand-dark truncate">Skincare &amp; Beauty</p>
+                    </div>
+                    <ArrowRight className="w-3 h-3 text-brand-muted group-hover:text-brand-dark transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                </Link>
+              </div>
             </div>
+
           </div>
 
           {/* ========================================================= */}
-          {/* DESKTOP RIGHT COLUMN: Framed Portrait + Category Cards (57%) */}
+          {/* DESKTOP RIGHT COLUMN: Editorial Boutique Composition (57%)*/}
+          {/* Bangles: Primary (58%) | Founders + Cosmetics: Secondary (42%) */}
           {/* ========================================================= */}
-          <div className="hidden lg:flex lg:col-span-7 flex-col gap-3.5">
+          <div className="hidden lg:grid lg:col-span-7 grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
             
-            {/* Framed Founders Photograph */}
-            <div className="relative w-full bg-brand-surface p-3.5 border border-brand-border/80 shadow-xs">
-              <div className="relative w-full aspect-[16/10] overflow-hidden bg-brand-bg">
-                <Image
-                  src={OWNERS_PHOTO}
-                  alt="Owners of Chadani Cosmetic, a family-owned beauty and bangles store in Dharan"
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 680px"
-                  className="object-cover object-[center_32%] transition-transform duration-700 ease-out hover:scale-102"
-                />
-              </div>
-
-              {/* Refined Framing Caption */}
-              <div className="mt-2.5 pt-2 border-t border-brand-border/60 flex items-center justify-between text-xs px-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-accent" />
-                  <span className="font-serif italic font-medium text-brand-dark text-[13px]">
-                    Family-owned in Dharan
-                  </span>
-                </div>
-                <span className="text-[11px] font-mono uppercase tracking-[0.16em] text-brand-muted">
-                  The people behind Chadani Cosmetic
-                </span>
-              </div>
-            </div>
-
-            {/* Supporting Bangles & Cosmetics Visual Cards */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* Bangles Category Entry */}
+            {/* ------------------------------------------------------- */}
+            {/* PRIMARY HERO FEATURE: Bangles Showcase (Cols 1-7)      */}
+            {/* ------------------------------------------------------- */}
+            <div className="col-span-7">
               <Link
                 href={banglesHref}
-                className="group flex items-center gap-3 p-2.5 bg-brand-surface border border-brand-border/75 hover:border-brand-accent transition-all"
+                className="group relative flex flex-col justify-between w-full h-full min-h-[460px] overflow-hidden bg-brand-surface border border-brand-border/80 shadow-xs p-5"
               >
-                <div className="relative w-12 h-12 shrink-0 overflow-hidden bg-brand-bg border border-brand-border/60">
+                {/* Background Bangle Product Image */}
+                <Image
+                  src={BANGLES_HERO_IMAGE}
+                  alt="Chadani Bangle Collection - Traditional, Everyday, Trending"
+                  fill
+                  priority
+                  sizes="(max-width: 1280px) 45vw, 420px"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-104"
+                />
+
+                {/* Subtle Editorial Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/95 via-brand-dark/35 to-brand-dark/10" />
+
+                {/* Top Badge */}
+                <div className="relative z-10 flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-surface/95 backdrop-blur-xs text-brand-dark text-[10px] font-mono uppercase tracking-[0.2em] border border-brand-border/60">
+                    <Sparkles className="w-2.5 h-2.5 text-brand-accent" />
+                    <span>Featured Category</span>
+                  </span>
+                </div>
+
+                {/* Bottom Editorial Copy */}
+                <div className="relative z-10 space-y-1.5 text-brand-surface pt-24">
+                  <span className="text-[10px] font-mono tracking-[0.22em] uppercase text-brand-surface/80 block">
+                    Boutique Specialty
+                  </span>
+                  <h2 className="font-serif text-3xl xl:text-4xl text-white font-medium tracking-tight leading-tight">
+                    BANGLES
+                  </h2>
+                  <p className="text-xs text-brand-surface/90 font-light">
+                    Traditional · Everyday · Trending
+                  </p>
+                  <div className="pt-2">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.14em] text-white group-hover:text-brand-accent transition-colors">
+                      <span>Explore Collection</span>
+                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </div>
+
+            {/* ------------------------------------------------------- */}
+            {/* SECONDARY STACK: Founders Trust Card + Cosmetics Card   */}
+            {/* ------------------------------------------------------- */}
+            <div className="col-span-5 flex flex-col justify-between gap-3.5">
+              
+              {/* TOP: Refined Founders Trust Card (~38% visual weight) */}
+              <div className="bg-brand-surface p-2.5 sm:p-3 border border-brand-border/80 shadow-xs flex flex-col justify-between">
+                <div className="relative w-full aspect-[4/3] overflow-hidden bg-brand-bg border border-brand-border/50">
                   <Image
-                    src={BANGLES_THUMB}
-                    alt="Bangles collection"
+                    src={OWNERS_PHOTO}
+                    alt="Owners of Chadani Cosmetic, family-owned in Dharan"
                     fill
-                    sizes="48px"
-                    className="object-cover transition-transform duration-500 group-hover:scale-106"
+                    priority
+                    sizes="(max-width: 1280px) 25vw, 240px"
+                    className="object-cover object-[center_34%]"
                   />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1 text-[10px] font-mono tracking-[0.16em] uppercase text-brand-accent">
-                    <Sparkles className="w-2.5 h-2.5" />
-                    <span>BANGLES</span>
+                {/* Subtle caption */}
+                <div className="pt-2 flex items-center justify-between text-xs px-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0" />
+                    <span className="font-serif italic font-medium text-brand-dark text-xs">
+                      Family-owned in Dharan
+                    </span>
                   </div>
-                  <p className="text-xs font-serif text-brand-dark font-medium truncate leading-tight">
-                    Everyday · Traditional · Trending
-                  </p>
-                  <p className="text-[10px] text-brand-muted group-hover:text-brand-dark flex items-center gap-1 mt-0.5 font-medium transition-colors">
-                    <span>Explore Collection</span>
-                    <ArrowRight className="w-2.5 h-2.5 transition-transform group-hover:translate-x-0.5" />
-                  </p>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-brand-muted">
+                    Founders
+                  </span>
+                </div>
+              </div>
+
+              {/* BOTTOM: Secondary Cosmetics & Skincare Feature */}
+              <Link
+                href={cosmeticsHref}
+                className="group bg-brand-surface p-2.5 sm:p-3 border border-brand-border/80 shadow-xs flex flex-col justify-between hover:border-brand-accent transition-all"
+              >
+                <div className="relative w-full aspect-[4/3] overflow-hidden bg-brand-bg border border-brand-border/50">
+                  <Image
+                    src={COSMETICS_HERO_IMAGE}
+                    alt="Cosmetics, skincare and beauty treatments"
+                    fill
+                    sizes="(max-width: 1280px) 25vw, 240px"
+                    className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  />
+                </div>
+                {/* Label & link */}
+                <div className="pt-2 flex items-center justify-between text-xs px-0.5">
+                  <div>
+                    <div className="flex items-center gap-1 text-[10px] font-mono tracking-[0.14em] uppercase text-brand-accent">
+                      <Heart className="w-2.5 h-2.5" />
+                      <span>COSMETICS</span>
+                    </div>
+                    <p className="font-serif text-xs font-medium text-brand-dark truncate leading-tight mt-0.5">
+                      Skincare &amp; Daily Makeup
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-brand-muted group-hover:text-brand-dark flex items-center gap-0.5 transition-colors">
+                    <span>View</span>
+                    <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+                  </span>
                 </div>
               </Link>
 
-              {/* Cosmetics & Beauty Category Entry */}
-              <Link
-                href={cosmeticsHref}
-                className="group flex items-center gap-3 p-2.5 bg-brand-surface border border-brand-border/75 hover:border-brand-accent transition-all"
-              >
-                <div className="relative w-12 h-12 shrink-0 overflow-hidden bg-brand-bg border border-brand-border/60">
-                  <Image
-                    src={COSMETICS_THUMB}
-                    alt="Cosmetics and skincare"
-                    fill
-                    sizes="48px"
-                    className="object-cover transition-transform duration-500 group-hover:scale-106"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1 text-[10px] font-mono tracking-[0.16em] uppercase text-brand-accent">
-                    <Heart className="w-2.5 h-2.5" />
-                    <span>COSMETICS</span>
-                  </div>
-                  <p className="text-xs font-serif text-brand-dark font-medium truncate leading-tight">
-                    Skincare · Makeup · Daily Care
-                  </p>
-                  <p className="text-[10px] text-brand-muted group-hover:text-brand-dark flex items-center gap-1 mt-0.5 font-medium transition-colors">
-                    <span>Explore Collection</span>
-                    <ArrowRight className="w-2.5 h-2.5 transition-transform group-hover:translate-x-0.5" />
-                  </p>
-                </div>
-              </Link>
             </div>
 
           </div>
