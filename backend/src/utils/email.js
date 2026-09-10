@@ -1,57 +1,134 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 const { formatNpr } = require('./currency');
 
-// Verify Resend is configured on startup
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-if (!RESEND_API_KEY) {
-  console.warn('[email] RESEND_API_KEY not set — emails will fall back to console logs');
+// Environment configuration
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
+const SMTP_SECURE = process.env.SMTP_SECURE !== 'false'; // true for 465, false for 587
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+const EMAIL_FROM =
+  process.env.EMAIL_FROM ||
+  process.env.SMTP_FROM ||
+  (SMTP_USER ? `Chadani Cosmetic <${SMTP_USER}>` : 'Chadani Cosmetic <no-reply@chadanicosmetic.com>');
+
+// Non-blocking environment validation at module load
+if (SMTP_USER && SMTP_PASS) {
+  console.log(`[Email] Gmail SMTP configured ✓ (Host: ${SMTP_HOST}, Port: ${SMTP_PORT}, Secure: ${SMTP_SECURE})`);
 } else {
-  console.log('[email] Resend configured ✓');
+  console.warn('[Email] Notice: SMTP_USER or SMTP_PASS is not configured. Transactional emails will fall back to console in development.');
 }
 
-const FROM_ADDRESS = process.env.EMAIL_FROM || 'Chadani Cosmetic Store <onboarding@resend.dev>';
-
-function getResendClient() {
-  if (!RESEND_API_KEY) return null;
-  return new Resend(RESEND_API_KEY);
+/**
+ * Safely mask an email address for compliance with logging rules.
+ * e.g. "customer@example.com" -> "c***r@example.com"
+ */
+function maskEmail(email) {
+  if (!email || typeof email !== 'string') return 'unknown';
+  const parts = email.trim().split('@');
+  if (parts.length !== 2) return '***';
+  const [name, domain] = parts;
+  if (name.length <= 2) return `${name[0]}*@${domain}`;
+  return `${name[0]}***${name[name.length - 1]}@${domain}`;
 }
 
+// Singleton transporter instance
+let transporterInstance = null;
+
+/**
+ * Returns the configured Nodemailer transporter or null if credentials are not provided.
+ */
+function getTransporter() {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    return null;
+  }
+
+  if (!transporterInstance) {
+    transporterInstance = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '465', 10),
+      secure: process.env.SMTP_SECURE !== 'false',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+      connectionTimeout: 10000,
+      greetingTimeout: 5000,
+      socketTimeout: 15000,
+    });
+  }
+
+  return transporterInstance;
+}
+
+/**
+ * Development-safe manual verification step for checking Gmail SMTP connection.
+ * Does not send emails; merely verifies credentials with the SMTP server.
+ */
+async function verifySmtpTransport() {
+  const transporter = getTransporter();
+  if (!transporter) {
+    return {
+      ok: false,
+      error: 'SMTP credentials missing (SMTP_USER and SMTP_PASS must be defined in environment).',
+    };
+  }
+
+  try {
+    await transporter.verify();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+/**
+ * Unified transactional email dispatcher
+ */
 const sendEmail = async ({ to, subject, html, text }) => {
-  const resend = getResendClient();
+  if (!to) {
+    console.warn('[Email] Attempted to send email without recipient.');
+    return { success: false, error: 'Recipient email required' };
+  }
 
-  // ── Resend (production) ───────────────────────────────────────────────────
-  if (resend) {
+  const masked = maskEmail(to);
+  const transporter = getTransporter();
+
+  // ── Primary: Gmail SMTP ──────────────────────────────────────────────────
+  if (transporter) {
+    console.log('[Email] Sending via Gmail SMTP');
+    console.log(`[Email] Recipient: ${masked}`);
+
     try {
-      console.log(`[Resend] Attempting to send email to: ${to}`);
-      const { data, error } = await resend.emails.send({
-        from: FROM_ADDRESS,
+      const info = await transporter.sendMail({
+        from: EMAIL_FROM,
         to,
         subject,
         html,
         text,
       });
 
-      if (error) {
-        console.error('[Resend] Send error (API rejected):', error);
-        // Fall through to console fallback
-      } else {
-        console.log(`[Resend] Email successfully accepted for delivery: ${data?.id} (Recipient: ${to})`);
-        return { success: true, messageId: data?.id };
-      }
+      console.log(`[Email] SMTP accepted (Message ID: ${info.messageId})`);
+      return { success: true, messageId: info.messageId };
     } catch (err) {
-      console.error('[Resend] Unexpected error:', err.message);
-      // Fall through to console fallback
+      console.error(`[Email] SMTP rejected: ${err.message}`);
+      // Fall through to dev console fallback if configured/development
     }
+  } else {
+    console.warn(`[Email] SMTP not configured. Recipient: ${masked}`);
   }
 
-  // ── Console fallback (dev / Resend not configured) ────────────────────────
+  // ── Console Fallback (development / unconfigured SMTP) ───────────────────
   const allowFallback =
     process.env.SMTP_FALLBACK_ON_ERROR === 'true' ||
     process.env.NODE_ENV !== 'production';
 
   if (allowFallback) {
     console.log('\n=========================================');
-    console.log('[EMAIL FALLBACK — email not sent via Resend]');
+    console.log('[EMAIL FALLBACK — printed to console]');
     console.log(`To: ${to}`);
     console.log(`Subject: ${subject}`);
     if (text) console.log(text);
@@ -59,7 +136,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     return { success: true, fallback: true };
   }
 
-  return { success: false, error: 'Email service not configured.' };
+  return { success: false, error: 'Email delivery failed.' };
 };
 
 /**
@@ -138,10 +215,14 @@ const sendWelcomeEmail = async (email, name) => {
  */
 const sendOrderConfirmationEmail = async (order, customerEmail) => {
   const subject = `Order Confirmed - #${order.id.slice(0, 8)}`;
-  
+
   let productsHtml = '';
-  order.orderItems.forEach(item => {
-    const itemSubtotal = item.subtotal != null ? Number(item.subtotal) : (Number(item.price) * Number(item.quantity));
+  (order.orderItems || []).forEach((item) => {
+    const itemSubtotal =
+      item.subtotal != null
+        ? Number(item.subtotal)
+        : Number(item.price) * Number(item.quantity);
+
     productsHtml += `
       <tr style="border-b: 1px solid #ffe4e6;">
         <td style="padding: 12px; vertical-align: middle;">
@@ -161,14 +242,20 @@ const sendOrderConfirmationEmail = async (order, customerEmail) => {
   });
 
   const productsSubtotal = (order.orderItems || []).reduce(
-    (sum, item) => sum + Number(item.subtotal != null ? item.subtotal : (item.price * item.quantity)),
+    (sum, item) =>
+      sum +
+      Number(
+        item.subtotal != null ? item.subtotal : item.price * item.quantity
+      ),
     0
   );
   const deliveryFee = 100; // Flat Dharan Delivery
   const totalAmount =
     order.totalAmount > productsSubtotal
       ? Number(order.totalAmount)
-      : (productsSubtotal > 0 ? productsSubtotal + deliveryFee : Number(order.totalAmount));
+      : productsSubtotal > 0
+      ? productsSubtotal + deliveryFee
+      : Number(order.totalAmount);
 
   const html = `
     <div style="font-family: 'Playfair Display', 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 40px 20px; background-color: #fffafb; border: 1px solid #ffe4e6; border-radius: 24px; color: #4c0519;">
@@ -248,8 +335,25 @@ const sendOrderStatusUpdateEmail = async (order, customerEmail) => {
     cancelled: 'Cancelled ❌',
   };
 
-  const statusLabel = statusLabels[order.orderStatus.toLowerCase()] || order.orderStatus;
+  const statusKey = (order.orderStatus || '').toLowerCase();
+  const statusLabel = statusLabels[statusKey] || order.orderStatus;
   const subject = `Order Status Update - #${order.id.slice(0, 8)} - ${order.orderStatus.toUpperCase()}`;
+
+  const productsSubtotal = (order.orderItems || []).reduce(
+    (sum, item) =>
+      sum +
+      Number(
+        item.subtotal != null ? item.subtotal : item.price * item.quantity
+      ),
+    0
+  );
+  const deliveryFee = 100;
+  const totalAmount =
+    order.totalAmount > productsSubtotal
+      ? Number(order.totalAmount)
+      : productsSubtotal > 0
+      ? productsSubtotal + deliveryFee
+      : Number(order.totalAmount);
 
   const html = `
     <div style="font-family: 'Playfair Display', 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #fffafb; border: 1px solid #ffe4e6; border-radius: 24px; color: #4c0519;">
@@ -269,13 +373,7 @@ const sendOrderStatusUpdateEmail = async (order, customerEmail) => {
         
         <p style="font-size: 14px; line-height: 1.6; color: #4c0519; margin-bottom: 0; text-align: left;">
           <strong>Order Summary:</strong><br />
-          • Total Amount: ${formatNpr(
-            order.totalAmount > (order.orderItems || []).reduce((sum, item) => sum + Number(item.subtotal != null ? item.subtotal : item.price * item.quantity), 0)
-              ? Number(order.totalAmount)
-              : (order.orderItems && order.orderItems.length > 0
-                  ? (order.orderItems || []).reduce((sum, item) => sum + Number(item.subtotal != null ? item.subtotal : item.price * item.quantity), 0) + 100
-                  : Number(order.totalAmount))
-          )}<br />
+          • Total Amount: ${formatNpr(totalAmount)}<br />
           • Payment Method: ${order.paymentMethod}<br />
           • Shipping Address: ${order.address}
         </p>
@@ -286,13 +384,6 @@ const sendOrderStatusUpdateEmail = async (order, customerEmail) => {
     </div>
   `;
 
-  const totalAmount =
-    order.totalAmount > (order.orderItems || []).reduce((sum, item) => sum + Number(item.subtotal != null ? item.subtotal : item.price * item.quantity), 0)
-      ? Number(order.totalAmount)
-      : (order.orderItems && order.orderItems.length > 0
-          ? (order.orderItems || []).reduce((sum, item) => sum + Number(item.subtotal != null ? item.subtotal : item.price * item.quantity), 0) + 100
-          : Number(order.totalAmount));
-
   return sendEmail({
     to: customerEmail,
     subject,
@@ -302,8 +393,11 @@ const sendOrderStatusUpdateEmail = async (order, customerEmail) => {
 };
 
 module.exports = {
+  sendEmail,
   sendOtpEmail,
   sendWelcomeEmail,
   sendOrderConfirmationEmail,
   sendOrderStatusUpdateEmail,
+  verifySmtpTransport,
+  maskEmail,
 };
