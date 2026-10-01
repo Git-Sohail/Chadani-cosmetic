@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import Button from '../Button';
 
 export default function NewsletterSection() {
   const [email, setEmail] = useState('');
@@ -17,78 +16,51 @@ export default function NewsletterSection() {
   };
 
   return (
-    <section className="relative overflow-hidden py-0 bg-brand-bg">
-      {/* Full-bleed warm terracotta band */}
-      <motion.div
-        className="relative bg-[#9C6B5B] py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: '-80px' }}
-        transition={{ duration: 0.7 }}
-      >
-        {/* Subtle warm texture overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-5"
-          aria-hidden="true"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 20% 50%, #FFF 0%, transparent 50%), radial-gradient(circle at 80% 20%, #FFF 0%, transparent 40%)',
-          }}
-        />
+    <section className="py-16 sm:py-20 lg:py-24 bg-brand-bg">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="bg-brand-surface border border-brand-border p-8 sm:p-12 lg:p-14">
+          <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-brand-accent block mb-2">
+            The Journal & Releases
+          </span>
 
-        <div className="relative max-w-2xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1], delay: 0.1 }}
-          >
-            <div className="inline-flex items-center gap-2 mb-4">
-              <Sparkles className="w-4 h-4 text-[#F5EAE0]/70" strokeWidth={1.5} />
-              <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-[#F5EAE0]/80">
-                The Journal &amp; Releases
-              </span>
-              <Sparkles className="w-4 h-4 text-[#F5EAE0]/70" strokeWidth={1.5} />
+          <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-brand-dark font-normal tracking-tight mb-3">
+            Join the Chadani Circle
+          </h2>
+
+          <p className="text-sm text-brand-muted max-w-md mx-auto leading-relaxed font-normal mb-8">
+            Receive updates on seasonal arrivals, curated skincare advice, and restocks directly in your inbox.
+          </p>
+
+          {subscribed ? (
+            <div className="p-4 bg-brand-bg border border-brand-border text-xs tracking-wide text-brand-dark font-medium">
+              Thank you for subscribing to our updates.
             </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2.5 max-w-md mx-auto">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                required
+                className="flex-1 px-4 py-3 bg-brand-bg border border-brand-border rounded text-xs text-brand-text placeholder:text-brand-muted/60 focus:outline-none focus:border-brand-accent"
+              />
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                className="px-6 py-3 text-xs tracking-[0.16em] uppercase shrink-0"
+              >
+                Subscribe
+              </Button>
+            </form>
+          )}
 
-            <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-[#FAF5EE] font-normal tracking-tight mb-3">
-              Join the Chadani Circle
-            </h2>
-
-            <p className="text-sm text-[#F5EAE0]/80 max-w-md mx-auto leading-relaxed font-normal mb-8">
-              Receive updates on seasonal arrivals, curated skincare advice, and restocks directly in your inbox.
-            </p>
-
-            {subscribed ? (
-              <div className="inline-flex items-center gap-2 px-6 py-4 bg-[#FAF5EE]/15 border border-[#FAF5EE]/30 text-sm text-[#FAF5EE] font-medium backdrop-blur-xs">
-                ✓&ensp;You&rsquo;re subscribed — thank you!
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2.5 max-w-md mx-auto">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  required
-                  className="flex-1 px-4 py-3 bg-[#FAF5EE]/15 border border-[#FAF5EE]/30 text-xs text-[#FAF5EE] placeholder:text-[#F5EAE0]/50 focus:outline-none focus:border-[#FAF5EE]/70 focus:bg-[#FAF5EE]/20 transition-colors"
-                />
-                <button
-                  type="submit"
-                  className="shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-[#FAF5EE] text-[#241A15] text-xs font-medium uppercase tracking-[0.18em] hover:bg-white transition-colors cursor-pointer"
-                >
-                  <span>Subscribe</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </form>
-            )}
-
-            <p className="text-[11px] text-[#F5EAE0]/50 mt-4">
-              We value your privacy. Unsubscribe at any time.
-            </p>
-          </motion.div>
+          <p className="text-[11px] text-brand-muted/70 mt-4">
+            We value your privacy. Unsubscribe at any time.
+          </p>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }

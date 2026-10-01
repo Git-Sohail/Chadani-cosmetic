@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
 import { Star, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import axios from 'axios';
 import Link from 'next/link';
@@ -10,11 +9,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 function StarRow({ rating }) {
   return (
-    <div className="flex items-center gap-0.5" aria-label={`Rating: ${rating} out of 5 stars`}>
+    <div className="flex items-center gap-1" aria-label={`Rating: ${rating} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((s) => (
         <Star
           key={s}
-          className={`w-3 h-3 ${
+          className={`w-3.5 h-3.5 ${
             s <= rating
               ? 'fill-brand-accent text-brand-accent'
               : 'fill-transparent text-brand-border'
@@ -32,7 +31,7 @@ function ReviewCard({ review }) {
   const productImage = review.product?.image;
 
   return (
-    <div className="bg-brand-surface border border-brand-border/80 p-6 sm:p-7 flex flex-col justify-between h-full space-y-5 hover:border-brand-accent/40 transition-colors duration-300">
+    <div className="bg-brand-surface border border-brand-border p-6 sm:p-7 flex flex-col justify-between h-full space-y-6">
       <div className="space-y-4">
         {/* Rating & Product Tag */}
         <div className="flex items-center justify-between gap-2">
@@ -102,7 +101,6 @@ export default function ReviewsCarousel() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const perPage = 3;
-  const autoTimer = useRef(null);
 
   useEffect(() => {
     axios
@@ -115,33 +113,14 @@ export default function ReviewsCarousel() {
   const totalPages = Math.max(1, Math.ceil(reviews.length / perPage));
   const visible = reviews.slice(page * perPage, page * perPage + perPage);
 
-  const prev = () => {
-    setPage((p) => (p === 0 ? totalPages - 1 : p - 1));
-  };
-  const next = () => {
-    setPage((p) => (p === totalPages - 1 ? 0 : p + 1));
-  };
-
-  // Auto-advance every 6 seconds when there are multiple pages
-  useEffect(() => {
-    if (totalPages <= 1) return;
-    autoTimer.current = setInterval(next, 6000);
-    return () => clearInterval(autoTimer.current);
-  }, [totalPages, page]);
-
-  const pause = () => clearInterval(autoTimer.current);
+  const prev = () => setPage((p) => (p === 0 ? totalPages - 1 : p - 1));
+  const next = () => setPage((p) => (p === totalPages - 1 ? 0 : p + 1));
 
   return (
     <section id="reviews" className="py-16 sm:py-20 lg:py-24 bg-brand-bg border-b border-brand-border/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <motion.div
-          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 sm:mb-12 border-b border-brand-border/60 pb-5"
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
-          transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
-        >
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 sm:mb-12 border-b border-brand-border/60 pb-5">
           <div>
             <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-brand-accent block mb-2">
               Community Voices
@@ -155,7 +134,7 @@ export default function ReviewsCarousel() {
             <div className="flex items-center gap-2 self-start sm:self-end">
               <button
                 type="button"
-                onClick={() => { pause(); prev(); }}
+                onClick={prev}
                 aria-label="Previous reviews"
                 className="w-8 h-8 border border-brand-border bg-brand-surface flex items-center justify-center text-brand-dark hover:border-brand-accent hover:text-brand-accent transition-colors cursor-pointer"
               >
@@ -166,7 +145,7 @@ export default function ReviewsCarousel() {
               </span>
               <button
                 type="button"
-                onClick={() => { pause(); next(); }}
+                onClick={next}
                 aria-label="Next reviews"
                 className="w-8 h-8 border border-brand-border bg-brand-surface flex items-center justify-center text-brand-dark hover:border-brand-accent hover:text-brand-accent transition-colors cursor-pointer"
               >
@@ -174,7 +153,7 @@ export default function ReviewsCarousel() {
               </button>
             </div>
           )}
-        </motion.div>
+        </div>
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -193,37 +172,9 @@ export default function ReviewsCarousel() {
         ) : reviews.length === 0 ? (
           <EmptyReviews />
         ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={page}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-            >
-              {visible.map((review) => (
-                <ReviewCard key={review.id} review={review} />
-              ))}
-            </motion.div>
-          </AnimatePresence>
-        )}
-
-        {/* Pagination dots */}
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-2 mt-8">
-            {Array.from({ length: totalPages }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => { pause(); setPage(i); }}
-                aria-label={`Go to page ${i + 1}`}
-                className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                  i === page
-                    ? 'bg-brand-accent w-5'
-                    : 'bg-brand-border hover:bg-brand-muted'
-                }`}
-              />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {visible.map((review) => (
+              <ReviewCard key={review.id} review={review} />
             ))}
           </div>
         )}

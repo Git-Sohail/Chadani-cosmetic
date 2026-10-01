@@ -3,7 +3,6 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import { Heart, ShoppingBag, Eye } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
@@ -40,11 +39,7 @@ export default function LuxuryProductCard({ product }) {
   const pricing = getProductPricing(product);
 
   return (
-    <motion.div
-      className="group relative bg-brand-surface border border-brand-border/75 flex flex-col h-full transition-colors duration-300 hover:border-brand-accent/50"
-      whileHover={{ y: -3 }}
-      transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-    >
+    <div className="group relative bg-brand-surface border border-brand-border/75 flex flex-col h-full transition-all duration-300 hover:border-brand-accent/60">
       {/* Product Image Container */}
       <div className="relative aspect-[4/5] overflow-hidden bg-brand-bg">
         {/* Sale / Discount Badge */}
@@ -81,7 +76,7 @@ export default function LuxuryProductCard({ product }) {
               alt={product.name}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+              className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-103"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center font-serif text-brand-muted/40 italic text-sm">
@@ -129,6 +124,6 @@ export default function LuxuryProductCard({ product }) {
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
