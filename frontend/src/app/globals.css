@@ -1,76 +1,110 @@
 @import "tailwindcss";
 
 :root {
-  /* Phase 2: Controlled Luxury-Neutral Palette */
-  --brand-bg: #F7F3EC;
-  --brand-surface: #FFFDF9;
-  --brand-card: #FFFFFF;
-  --brand-text: #1F1B18;
-  --brand-muted: #756B63;
-  --brand-accent: #8A6A4B;
-  --brand-border: #DDD4C8;
-  --brand-border-subtle: #E8E2D9;
-  --brand-dark: #171411;
+  /* ─── Core Brand Palette ─────────────────────────────── */
+  --brand-bg:             #F7F3EC;   /* warm cream page base       */
+  --brand-surface:        #FFFDF9;   /* near-white panels           */
+  --brand-card:           #FFFFFF;
+  --brand-text:           #1F1B18;   /* near-black body copy        */
+  --brand-muted:          #756B63;   /* secondary / caption copy    */
+  --brand-accent:         #8A6A4B;   /* warm brown — CTAs / icons   */
+  --brand-accent-light:   #B4885F;   /* lighter warm brown hover    */
+  --brand-terracotta:     #9C6B5B;   /* terracotta ribbon / links   */
+  --brand-border:         #DDD4C8;
+  --brand-border-subtle:  #E8E2D9;
+  --brand-dark:           #171411;   /* near-black headings / btns  */
+  --brand-blush:          #F0E4DC;   /* very soft blush tint        */
 
-  /* Backward-compatible aliases for un-redesigned inner pages */
-  --background: #F7F3EC;
-  --foreground: #1F1B18;
-  --nav-height-mobile: 64px;
-  --nav-height-desktop: 76px;
-  --luxury-burgundy: #171411;
-  --luxury-burgundy-dark: #0F0D0B;
-  --luxury-rose-gold: #8A6A4B;
-  --luxury-pink: #F7F3EC;
-  --luxury-white: #FFFDF9;
-  --luxury-text: #1F1B18;
+  /* Backward-compatible aliases */
+  --background:              #F7F3EC;
+  --foreground:              #1F1B18;
+  --nav-height-mobile:       64px;
+  --nav-height-desktop:      76px;
+  --luxury-burgundy:         #171411;
+  --luxury-burgundy-dark:    #0F0D0B;
+  --luxury-rose-gold:        #8A6A4B;
+  --luxury-pink:             #F7F3EC;
+  --luxury-white:            #FFFDF9;
+  --luxury-text:             #1F1B18;
 }
 
 @theme inline {
-  --color-brand-bg: var(--brand-bg);
-  --color-brand-surface: var(--brand-surface);
-  --color-brand-card: var(--brand-card);
-  --color-brand-text: var(--brand-text);
-  --color-brand-muted: var(--brand-muted);
-  --color-brand-accent: var(--brand-accent);
-  --color-brand-border: var(--brand-border);
-  --color-brand-border-subtle: var(--brand-border-subtle);
-  --color-brand-dark: var(--brand-dark);
+  --color-brand-bg:             var(--brand-bg);
+  --color-brand-surface:        var(--brand-surface);
+  --color-brand-card:           var(--brand-card);
+  --color-brand-text:           var(--brand-text);
+  --color-brand-muted:          var(--brand-muted);
+  --color-brand-accent:         var(--brand-accent);
+  --color-brand-accent-light:   var(--brand-accent-light);
+  --color-brand-terracotta:     var(--brand-terracotta);
+  --color-brand-border:         var(--brand-border);
+  --color-brand-border-subtle:  var(--brand-border-subtle);
+  --color-brand-dark:           var(--brand-dark);
+  --color-brand-blush:          var(--brand-blush);
 
   /* Legacy mappings */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-luxury-burgundy: var(--luxury-burgundy);
+  --color-background:           var(--background);
+  --color-foreground:           var(--foreground);
+  --color-luxury-burgundy:      var(--luxury-burgundy);
   --color-luxury-burgundy-dark: var(--luxury-burgundy-dark);
-  --color-luxury-rose-gold: var(--luxury-rose-gold);
-  --color-luxury-pink: var(--luxury-pink);
-  --color-luxury-white: var(--luxury-white);
-  --color-luxury-text: var(--luxury-text);
+  --color-luxury-rose-gold:     var(--luxury-rose-gold);
+  --color-luxury-pink:          var(--luxury-pink);
+  --color-luxury-white:         var(--luxury-white);
+  --color-luxury-text:          var(--luxury-text);
 
-  --font-sans: var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-serif: var(--font-heading), "Times New Roman", Garamond, serif;
+  --font-sans:   var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif:  var(--font-heading), "Times New Roman", Garamond, serif;
 
-  --animate-spin-slow: spin 20s linear infinite;
-  --animate-fadeIn: fadeIn 0.3s ease-out forwards;
+  /* Animation tokens */
+  --animate-spin-slow:  spin 20s linear infinite;
+  --animate-fadeIn:     fadeIn 0.4s ease-out forwards;
+  --animate-slideUp:    slideUp 0.5s ease-out forwards;
+  --animate-pulse-soft: pulseSoft 2.5s ease-in-out infinite;
 }
 
+/* ─── Keyframes ────────────────────────────────────────── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* ─── Base Styles ──────────────────────────────────────── */
 body {
   background-color: var(--brand-bg);
   color: var(--brand-text);
   overflow-x: hidden;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Subtle editorial scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #F7F3EC; }
-::-webkit-scrollbar-thumb {
-  background: #DDD4C8;
-  border-radius: 9999px;
-}
+/* ─── Scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; }
+::-webkit-scrollbar-track  { background: #F7F3EC; }
+::-webkit-scrollbar-thumb  { background: #DDD4C8; border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: #8A6A4B; }
+
+/* ─── Selection ────────────────────────────────────────── */
+::selection {
+  background: #DDD4C8;
+  color: #1F1B18;
+}
+
+/* ─── Reduced Motion ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
